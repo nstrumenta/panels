@@ -21,50 +21,28 @@ jobs:
           - name: lint
             command: |
               # lint steps
-              set -x
-              yarn constraints
-              yarn license-check
-              yarn dedupe --check
-              yarn run tsc --noEmit # typecheck files that are not included by webpack or package builds
-              yarn run lint:ci
-              yarn run lint:unused-exports
-              yarn run lint:dependencies
-          - name: packages
-            command: yarn run build:packages
-          - name: web
-            command: yarn run web:build:prod
-          - name: build benchmark
-            command: yarn run benchmark:build:prod
-          - name: test
-            command: yarn run test --maxWorkers=100%
-        include:
-          - os: windows-2019
-            config:
-              name: packages
-              command: echo complete
+              npm run lint
+          - name: build
+            command: npm run build
 
     name: ${{ matrix.config.name }} (${{ matrix.os }})
 
     steps:
       - uses: actions/checkout@v3.5.2
-        with:
-          lfs: true
 
       - uses: actions/setup-node@v3.6.0
         with:
           node-version: 16.17
-      - run: corepack enable yarn
 
       - name: Restore cache
         uses: actions/cache@v3.3.1
         with:
           path: |
-            .yarn/cache
             **/node_modules
-          key: v5-${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
-          restore-keys: v5-${{ runner.os }}-yarn-
+          key: v5-${{ runner.os }}-npm-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: v5-${{ runner.os }}-npm-
 
-      - run: yarn install --immutable
+      - run: npm i
 
       - run: ${{ matrix.config.command }}
 

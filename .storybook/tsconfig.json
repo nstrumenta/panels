@@ -1,0 +1,16 @@
+{
+  "include": ["./**/*", "../**/*.stories.*"],
+  "compilerOptions": {
+    "noEmit": true,
+    "jsx": "react-jsx",
+    "lib": ["dom", "dom.iterable", "es2022", "webworker"],
+    "experimentalDecorators": true,
+    "useUnknownInCatchVariables": false,
+    "baseUrl": "../",
+    "paths": {
+      "@base/*": ["src/*"],
+      "@foxglove/rostime/*": ["src/@foxglove/rostime/dist/*"],
+      "@foxglove/*": ["src/@foxglove/*"]
+    }
+  }
+}

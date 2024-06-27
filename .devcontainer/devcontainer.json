@@ -1,0 +1,10 @@
+{
+  "image": "nstrumenta/data-job-runner",
+  "privileged": true,
+  "runArgs": ["--env-file", ".nstrumenta/credentials/.env"],
+  "customizations": {
+    "vscode": {
+      "extensions": ["eamodio.gitlens", "esbenp.prettier-vscode", "dbaeumer.vscode-eslint"]
+    }
+  }
+}

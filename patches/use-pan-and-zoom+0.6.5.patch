@@ -1,0 +1,15 @@
+diff --git a/node_modules/use-pan-and-zoom/package.json b/node_modules/use-pan-and-zoom/package.json
+index 7fbb9e6..5f035c4 100644
+--- a/node_modules/use-pan-and-zoom/package.json
++++ b/node_modules/use-pan-and-zoom/package.json
+@@ -4,10 +4,6 @@
+   "description": "Pan and zoom a container using React Hooks",
+   "source": "src/index.ts",
+   "main": "./dist/index.js",
+-  "exports": {
+-    "import": "./dist/index.modern.js",
+-    "require": "./dist/index.js"
+-  },
+   "module": "./dist/index.module.js",
+   "unpkg": "./dist/index.umd.js",
+   "repository": "https://github.com/wouterraateland/use-pan-and-zoom.git",

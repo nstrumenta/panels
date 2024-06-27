@@ -1,0 +1,5 @@
+{
+  "nstrumentaModuleType": "web",
+  "entry": "dist/index.html",
+  "includes": ["dist"]
+}

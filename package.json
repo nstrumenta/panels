@@ -21,7 +21,7 @@
     "@foxglove/ros2": "4.0.0",
     "@foxglove/rosbag": "0.4.0",
     "@foxglove/rosbag2-web": "4.1.0",
-    "@foxglove/rosmsg": "4.2.1",
+    "@foxglove/rosmsg": "5.0.4",
     "@foxglove/rosmsg-serialization": "2.0.1",
     "@foxglove/rosmsg2-serialization": "2.0.0",
     "@foxglove/rostime": "^1.1.2",

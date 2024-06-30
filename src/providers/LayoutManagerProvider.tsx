@@ -86,12 +86,11 @@ export default function LayoutManagerProvider({
     return new NstLayoutStorage();
   }, [firebaseInstance, projectId]);
 
+  const layoutManager = useMemo(
+    () => new LayoutManager({ local: nstrumentaLayoutStorage, remote: undefined }),
+    [nstrumentaLayoutStorage]
+  );
   if (nstrumentaLayoutStorage) {
-    const layoutManager = useMemo(
-      () => new LayoutManager({ local: nstrumentaLayoutStorage, remote: undefined }),
-      [nstrumentaLayoutStorage]
-    );
-
     return (
       <LayoutManagerContext.Provider value={layoutManager}>
         {children}

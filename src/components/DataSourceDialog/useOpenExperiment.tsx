@@ -24,6 +24,6 @@ export function useOpenExperiment(): (filePath: string) => Promise<void> {
       const dataUrl = await getDownloadURL(ref(firebaseInstance!.storage, experiment.dataFilePath));
       selectSource('nstrumenta', { type: 'nstrumenta', params: { dataUrl } });
     },
-    [selectSource, setExperiment, setExperimentPath]
+    [firebaseInstance, selectSource, setExperiment, setExperimentPath]
   );
 }

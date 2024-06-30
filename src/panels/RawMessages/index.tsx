@@ -571,6 +571,7 @@ function RawMessages(props: Props) {
         )}
       </Stack>
     );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     autoExpandPaths,
     baseItem,

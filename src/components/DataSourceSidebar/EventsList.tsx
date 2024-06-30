@@ -97,7 +97,9 @@ export function EventsList(): JSX.Element {
                 }),
               ];
             });
-          } catch (err) {}
+          } catch (err) {
+            console.log(err);
+          }
         }
         setEvents({ loading: false, value: fetchedEvents });
       }

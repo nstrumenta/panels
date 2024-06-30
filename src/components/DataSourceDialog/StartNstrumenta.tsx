@@ -141,7 +141,7 @@ export default function StartNstrumenta(): JSX.Element {
       dataSourceDialogActions.open('nstrumenta');
       openExperiment(experimentParam);
     }
-  }, [openExperiment, setExperimentPath, selectedSource]);
+  }, [openExperiment, setExperimentPath, selectedSource, experimentParam, dataSourceDialogActions]);
 
   const startItems = useMemo(() => {
     return [

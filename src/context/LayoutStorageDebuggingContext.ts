@@ -8,7 +8,7 @@ import { LayoutID } from '@base/services/ILayoutStorage';
 
 type ILayoutStorageDebugging = {
   syncNow: () => Promise<void>;
-  // eslint-disable-next-line @foxglove/no-boolean-parameters
+
   setOnline: (online: boolean) => void;
   injectEdit: (id: LayoutID) => Promise<void>;
   injectRename: (id: LayoutID) => Promise<void>;

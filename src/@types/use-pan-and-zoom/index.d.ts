@@ -41,7 +41,7 @@ export default function usePanZoom({
   onZoom?: (transform: transform) => void;
 }): {
   container: HTMLElement | null;
-  setContainer: (el: any) => (() => void) | undefined;
+  setContainer: (el: unknown) => (() => void) | undefined;
   transform: string;
   center: position;
   pan: {

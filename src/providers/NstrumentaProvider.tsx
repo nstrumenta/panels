@@ -40,22 +40,6 @@ export default function NstrumentaProvider({ children }: { children?: ReactNode 
 
   const [projectId, setProjectId] = useState<string>();
 
-  const fetchExperiment = async () => {
-    if (firebaseInstance == undefined || experimentPath == undefined) return;
-
-    const experimentUrl = await getDownloadURL(ref(firebaseInstance.storage, experimentPath));
-    const experiment = await (await fetch(experimentUrl)).json();
-
-    setExperiment(experiment);
-  };
-
-  const saveExperiment = async () => {
-    const stringified = JSON.stringify(experiment)!;
-    if (firebaseInstance) {
-      uploadString(ref(firebaseInstance.storage, experimentPath), stringified);
-      console.log('uploading experiment', experimentPath, stringified);
-    }
-  };
   const [nstrumentaState, setNstrumentaState] = useState<INstrumentaContext>();
 
   const fetchConfig = async () => {
@@ -105,6 +89,22 @@ export default function NstrumentaProvider({ children }: { children?: ReactNode 
   }, [experimentPath]);
 
   useEffect(() => {
+    const fetchExperiment = async () => {
+      if (firebaseInstance == undefined || experimentPath == undefined) return;
+
+      const experimentUrl = await getDownloadURL(ref(firebaseInstance.storage, experimentPath));
+      const experiment = await (await fetch(experimentUrl)).json();
+
+      setExperiment(experiment);
+    };
+
+    const saveExperiment = async () => {
+      const stringified = JSON.stringify(experiment)!;
+      if (firebaseInstance) {
+        uploadString(ref(firebaseInstance.storage, experimentPath), stringified);
+        console.log('uploading experiment', experimentPath, stringified);
+      }
+    };
     if (firebaseInstance) {
       setNstrumentaState({
         projectId,
@@ -118,7 +118,7 @@ export default function NstrumentaProvider({ children }: { children?: ReactNode 
         firebaseInstance,
       });
     }
-  }, [experiment, userProjects, projectId, setProjectId, firebaseInstance]);
+  }, [experiment, userProjects, projectId, setProjectId, firebaseInstance, experimentPath]);
 
   return (
     <NstrumentaContext.Provider value={nstrumentaState}>{children}</NstrumentaContext.Provider>

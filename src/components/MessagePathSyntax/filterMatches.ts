@@ -25,6 +25,5 @@ export function filterMatches(filter: MessagePathFilter, value: unknown): boolea
 
   // Test equality using `==` so we can be forgiving for comparing booleans with integers,
   // comparing numbers with strings, bigints with numbers, and so on.
-  // eslint-disable-next-line @foxglove/strict-equality
   return currentValue != undefined && currentValue == filter.value;
 }

@@ -57,6 +57,7 @@ export async function exportToJson(idbDatabase: IDBDatabase): Promise<string | u
 
 export async function importFromJson(
   idbDatabase: IDBDatabase,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   importObject: Record<string, any>
 ): Promise<void> {
   return await new Promise<void>((resolve, reject) => {

@@ -106,6 +106,7 @@ export function getBlockItemsByPath(
     // this can easily result in many millions of points.
     if (count >= 1_000_000) {
       // if we have memory stats we can let the user have more points as long as memory is not under pressure
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const memory = (performance as any).memory;
       if (memory) {
         const pct = memory.usedJSHeapSize / memory.jsHeapSizeLimit;

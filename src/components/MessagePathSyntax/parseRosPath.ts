@@ -18,7 +18,7 @@ import { filterMap } from '@base/den/collection';
 
 import { RosPath } from './constants';
 
-// @ts-ignore
+// @ts-expect-error grammar.js implicitly has an 'any' type
 import grammar from './grammar.js';
 
 const grammarObj = Grammar.fromCompiled(grammar);

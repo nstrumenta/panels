@@ -28,6 +28,7 @@ export default defineConfig({
   build: {
     sourcemap: 'inline',
     minify: true,
+    chunkSizeWarningLimit: 5000,
   },
   worker: {
     plugins: () => [wasm(), topLevelAwait(), comlink()],

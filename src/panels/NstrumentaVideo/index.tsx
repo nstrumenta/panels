@@ -115,7 +115,7 @@ function NstrumentaVideoPanel(props: Props): JSX.Element {
         video.currentTime = videoCurrentTime;
       }
     }
-  }, [activeData, nstrumentaVideo, videoName, setVideoFilePath]);
+  }, [activeData, nstrumentaVideo, videoName, setVideoFilePath, offsetInput]);
 
   useEffect(() => {
     if (videoFilePath) {

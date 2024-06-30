@@ -167,7 +167,7 @@ export function decodeFloat1c(
   gray: Uint8Array,
   width: number,
   height: number,
-  // eslint-disable-next-line @foxglove/no-boolean-parameters
+
   is_bigendian: boolean,
   output: Uint8ClampedArray
 ): void {
@@ -205,7 +205,7 @@ export function decodeMono16(
   mono16: Uint8Array,
   width: number,
   height: number,
-  // eslint-disable-next-line @foxglove/no-boolean-parameters
+
   is_bigendian: boolean,
   output: Uint8ClampedArray,
   options?: { minValue?: number; maxValue?: number }

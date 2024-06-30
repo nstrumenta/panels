@@ -15,7 +15,7 @@ export declare type FzfOptions<U = string> = U extends string
   : SyncOptsToUse<U> & {
       selector: SyncOptions<U>['selector'];
     };
-export declare class Fzf<L extends ReadonlyArray<any>> {
+export declare class Fzf<L extends ReadonlyArray<unknown>> {
   private finder;
   find: SyncFinder<L>['find'];
   constructor(list: L, ...optionsTuple: SyncOptionsTuple<ArrayElement<L>>);
@@ -25,7 +25,7 @@ export declare type AsyncFzfOptions<U = string> = U extends string
   : AsyncOptsToUse<U> & {
       selector: AsyncOptions<U>['selector'];
     };
-export declare class AsyncFzf<L extends ReadonlyArray<any>> {
+export declare class AsyncFzf<L extends ReadonlyArray<unknown>> {
   private finder;
   find: AsyncFinder<L>['find'];
   constructor(list: L, ...optionsTuple: AsyncOptionsTuple<ArrayElement<L>>);

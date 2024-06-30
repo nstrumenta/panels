@@ -118,7 +118,7 @@ function ExtensionsSidebar() {
 }
 
 type WorkspaceProps = CustomWindowControlsProps & {
-  deepLinks?: string[]; // eslint-disable-line react/no-unused-prop-types
+  deepLinks?: string[];
   appBarLeftInset?: number;
   onAppBarDoubleClick?: () => void;
 };
@@ -177,9 +177,6 @@ function WorkspaceContent(props: WorkspaceContentProps): JSX.Element {
   // We use playerId to detect when a player changes for RemountOnValueChange below
   // see comment below above the RemountOnValueChange component
   const playerId = useMessagePipeline(selectPlayerId);
-
-  const { currentUser, signIn } = useCurrentUser();
-  const supportsAccountSettings = signIn != undefined;
 
   useDefaultWebLaunchPreference();
 
@@ -286,14 +283,7 @@ function WorkspaceContent(props: WorkspaceContentProps): JSX.Element {
     }
 
     return [topItems, bottomItems];
-  }, [
-    DataSourceSidebarItem,
-    playerProblems,
-    enableStudioLogsSidebar,
-    enableNewTopNav,
-    supportsAccountSettings,
-    currentUser,
-  ]);
+  }, [DataSourceSidebarItem, playerProblems, enableStudioLogsSidebar, enableNewTopNav]);
 
   const eventsSupported = useEvents(selectEventsSupported);
 

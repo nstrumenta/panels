@@ -87,7 +87,7 @@ export class HitmapRenderContext {
     radius: number,
     startAngle: number,
     endAngle: number,
-    // eslint-disable-next-line @foxglove/no-boolean-parameters
+
     counterclockwise?: boolean
   ): void {
     this._ctx.arc(x, y, radius, startAngle, endAngle, counterclockwise);

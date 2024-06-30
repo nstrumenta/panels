@@ -369,7 +369,7 @@ export default class ChartJSManager {
       };
 
       // Only display labels for datapoints that include a "label" property
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+       
       datalabelsOptions.formatter = (value: { label?: string }, _context: unknown) => {
         // Return "null" if we don't want this label to be displayed.
         // Returning "undefined" falls back to the default formatting and will display

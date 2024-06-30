@@ -319,17 +319,17 @@ export class IterablePlayer implements Player {
     }
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+   
   public setPublishers(_publishers: AdvertiseOptions[]): void {
     // no-op
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+   
   public setParameter(_key: string, _value: ParameterValue): void {
     throw new Error('Parameter editing is not supported by this data source');
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+   
   public publish(_payload: PublishPayload): void {
     throw new Error('Publishing is not supported by this data source');
   }
@@ -1000,7 +1000,7 @@ export class IterablePlayer implements Player {
         const start = Date.now();
 
         await this._tick();
-        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition, @typescript-eslint/strict-boolean-expressions
+
         if (this._nextState) {
           return;
         }

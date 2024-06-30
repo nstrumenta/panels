@@ -457,7 +457,6 @@ export default function Panel<
     );
 
     const setHasFullscreenDescendant = useCallback(
-      // eslint-disable-next-line @foxglove/no-boolean-parameters
       (value: boolean) => {
         _setHasFullscreenDescendant(value);
         parentPanelContext?.setHasFullscreenDescendant(value);

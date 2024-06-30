@@ -24,7 +24,7 @@ function createEventsStore() {
     setEvents: (events: AsyncState<DataSourceEvent[]>) =>
       set({ events, selectedEventId: undefined }),
     setFilter: (filter: string) => set({ filter }),
-    // eslint-disable-next-line @foxglove/no-boolean-parameters
+
     setEventsSupported: (eventsSupported: boolean) => set({ eventsSupported }),
     setDeviceId: (deviceId: string | undefined) => set({ deviceId }),
   }));

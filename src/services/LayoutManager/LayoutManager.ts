@@ -102,7 +102,6 @@ export default class LayoutManager implements ILayoutManager {
 
   public error: undefined | Error = undefined;
 
-  // eslint-disable-next-line @foxglove/no-boolean-parameters
   public setOnline(online: boolean): void {
     this.isOnline = online;
     this.emitter.emit('onlinechange');

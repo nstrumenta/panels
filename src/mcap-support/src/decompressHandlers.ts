@@ -28,12 +28,12 @@ async function _loadDecompressHandlers(): Promise<McapTypes.DecompressHandlers> 
   return {
     lz4: lz4wasm.decompress,
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+     
     bz2: (_buffer, _decompressedSize) => {
       throw new Error('bz2 not implemented');
     },
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+     
     zstd: (_buffer, _decompressedSize) => {
       throw new Error('zstd not implemented');
     },

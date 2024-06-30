@@ -69,14 +69,12 @@ const useStyles = makeStyles<void, 'icon' | 'dismissButton'>()((theme, _params, 
 }));
 
 const useContainerStyles = makeStyles()({
-  /* eslint-disable tss-unused-classes/unused-classes */
   containerAnchorOriginBottomCenter: anchorWithOffset('bottom'),
   containerAnchorOriginBottomRight: anchorWithOffset('bottom'),
   containerAnchorOriginBottomLeft: anchorWithOffset('bottom'),
   containerAnchorOriginTopCenter: anchorWithOffset('top'),
   containerAnchorOriginTopRight: anchorWithOffset('top'),
   containerAnchorOriginTopLeft: anchorWithOffset('top'),
-  /* eslint-enable tss-unused-classes/unused-classes */
 });
 
 const CloseSnackbarAction = ({ id }: { id: SnackbarKey }) => {

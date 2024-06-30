@@ -28,7 +28,7 @@ declare type BaseOptionsTuple<U> = U extends string
         selector: Selector<U>;
       }
     ];
-export declare abstract class BaseFinder<L extends ReadonlyArray<any>> {
+export declare abstract class BaseFinder<L extends ReadonlyArray<unknown>> {
   runesList: Rune[][];
   items: L;
   readonly opts: BaseOptions<ArrayElement<L>>;
@@ -43,7 +43,7 @@ export declare type SyncOptionsTuple<U> = U extends string
         selector: Selector<U>;
       }
     ];
-export declare class SyncFinder<L extends ReadonlyArray<any>> extends BaseFinder<L> {
+export declare class SyncFinder<L extends ReadonlyArray<unknown>> extends BaseFinder<L> {
   readonly opts: SyncOptions<ArrayElement<L>>;
   constructor(list: L, ...optionsTuple: SyncOptionsTuple<ArrayElement<L>>);
   find(query: string): FzfResultItem<ArrayElement<L>>[];
@@ -56,7 +56,7 @@ export declare type AsyncOptionsTuple<U> = U extends string
         selector: Selector<U>;
       }
     ];
-export declare class AsyncFinder<L extends ReadonlyArray<any>> extends BaseFinder<L> {
+export declare class AsyncFinder<L extends ReadonlyArray<unknown>> extends BaseFinder<L> {
   readonly opts: AsyncOptions<ArrayElement<L>>;
   token: Token;
   constructor(list: L, ...optionsTuple: AsyncOptionsTuple<ArrayElement<L>>);

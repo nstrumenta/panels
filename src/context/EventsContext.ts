@@ -74,7 +74,7 @@ export type EventsStore = DeepReadonly<{
   setEvents: (events: AsyncState<DataSourceEvent[]>) => void;
 
   /** Set the flag indicating support for events. */
-  // eslint-disable-next-line @foxglove/no-boolean-parameters
+
   setEventsSupported: (supported: boolean) => void;
 
   /** Update the current filter expression. */

@@ -78,7 +78,7 @@ export default function PlayerManager(props: PropsWithChildren<PlayerManagerProp
       metricsCollector.setProperty('player', sourceId);
 
       // Sample sources don't need args or prompts to initialize
-      if (foundSource.type === 'sample' || foundSource.type === 'nstrumenta') {
+      if ( foundSource.type === 'nstrumenta') {
         const params = args?.params;
         const newPlayer = await foundSource.initialize({
           params,

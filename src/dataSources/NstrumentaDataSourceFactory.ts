@@ -24,16 +24,16 @@ class NstrumentaDataSourceFactory implements IDataSourceFactory {
   }
 
   public async initialize(args: DataSourceFactoryInitializeArgs): Promise<Player | undefined> {
-    const { dataUrl } = args.params!;
+    const { dataUrls } = args.params!;
     if (this.firebaseInstance?.storage == undefined) {
       console.error('firebase not initialized');
       return;
     }
 
-    const source = new McapIterableSource(dataUrl!);
+    const sources = (dataUrls as string[]).map((dataUrl) => new McapIterableSource(dataUrl));
 
     return new IterablePlayer({
-      source,
+      sources,
       isSampleDataSource: true,
       name: 'nstrumenta',
       metricsCollector: args.metricsCollector,

@@ -17,7 +17,8 @@ import { makeStyles } from 'tss-react/mui';
 import { AppSetting } from './AppSetting';
 import { AppBar } from './components/AppBar';
 import { CustomWindowControlsProps } from './components/AppBar/CustomWindowControls';
-import { DataSourceDialog, DataSourceDialogItem } from './components/DataSourceDialog';
+import { DataSourceDialog } from './components/DataSourceDialog';
+import { useOpenExperiment } from './components/DataSourceDialog/useOpenExperiment';
 import { DataSourceSidebar } from './components/DataSourceSidebar';
 import { EventsList } from './components/DataSourceSidebar/EventsList';
 import { TopicList } from './components/DataSourceSidebar/TopicList';
@@ -43,8 +44,9 @@ import { SyncAdapters } from './components/SyncAdapters';
 import VariablesList from './components/VariablesList';
 import { WorkspaceDialogs } from './components/WorkspaceDialogs';
 import { LayoutState, useCurrentLayoutSelector } from './context/CurrentLayoutContext';
-import { useCurrentUser } from './context/CurrentUserContext';
 import { EventsStore, useEvents } from './context/EventsContext';
+import { useNstrumentaContext } from './context/NstrumentaContext';
+import { usePlayerSelection } from './context/PlayerSelectionContext';
 import {
   LeftSidebarItemKey,
   RightSidebarItemKey,
@@ -56,7 +58,6 @@ import {
 import { useAppConfigurationValue } from './hooks';
 import useAddPanel from './hooks/useAddPanel';
 import { useDefaultWebLaunchPreference } from './hooks/useDefaultWebLaunchPreference';
-import { useInitialDeepLinkState } from './hooks/useInitialDeepLinkState';
 import { PlayerPresence } from './players/types';
 import { PanelStateContextProvider } from './providers/PanelStateContextProvider';
 import WorkspaceContextProvider from './providers/WorkspaceContextProvider';
@@ -123,11 +124,7 @@ type WorkspaceProps = CustomWindowControlsProps & {
   onAppBarDoubleClick?: () => void;
 };
 
-const DEFAULT_DEEPLINKS = Object.freeze([]);
-
 const selectPlayerPresence = ({ playerState }: MessagePipelineContext) => playerState.presence;
-const selectPlayerIsPresent = ({ playerState }: MessagePipelineContext) =>
-  playerState.presence !== PlayerPresence.NOT_PRESENT;
 const selectPlayerProblems = ({ playerState }: MessagePipelineContext) => playerState.problems;
 const selectIsPlaying = (ctx: MessagePipelineContext) =>
   ctx.playerState.activeData?.isPlaying === true;
@@ -351,7 +348,6 @@ function WorkspaceContent(props: WorkspaceContentProps): JSX.Element {
         {enableNewTopNav && (
           <AppBar
             leftInset={props.appBarLeftInset}
-            onDoubleClick={props.onAppBarDoubleClick}
             showCustomWindowControls={props.showCustomWindowControls}
             isMaximized={props.isMaximized}
             onMinimizeWindow={props.onMinimizeWindow}
@@ -402,27 +398,21 @@ function WorkspaceContent(props: WorkspaceContentProps): JSX.Element {
 }
 
 export default function Workspace(props: WorkspaceProps): JSX.Element {
-  const { currentUser } = useCurrentUser();
+  const { selectedSource } = usePlayerSelection();
 
-  console.log(currentUser);
+  const openExperiment = useOpenExperiment();
+  const { setExperimentPath } = useNstrumentaContext();
+  const experimentParam = new URLSearchParams(window.location.search).get('experiment') ?? '';
 
-  useInitialDeepLinkState(props.deepLinks ?? DEFAULT_DEEPLINKS);
-
-  const isPlayerPresent = useMessagePipeline(selectPlayerIsPresent);
-
-  //TODO initial item from user profile?
-  const initialItem: undefined | DataSourceDialogItem = isPlayerPresent ? undefined : 'start';
-
-  const initialState: Pick<WorkspaceContextStore, 'dataSourceDialog'> = {
-    dataSourceDialog: {
-      activeDataSource: undefined,
-      open: initialItem != undefined,
-      item: initialItem,
-    },
-  };
+  useEffect(() => {
+    // open the experiment from param on a new page load
+    if (setExperimentPath && experimentParam && !selectedSource) {
+      openExperiment(experimentParam);
+    }
+  }, [openExperiment, setExperimentPath, selectedSource, experimentParam]);
 
   return (
-    <WorkspaceContextProvider initialState={initialState}>
+    <WorkspaceContextProvider>
       <WorkspaceContent {...props} />
     </WorkspaceContextProvider>
   );

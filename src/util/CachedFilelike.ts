@@ -114,10 +114,10 @@ export default class CachedFilelike implements Filelike {
   }
 
   public async open(): Promise<void> {
-    console.log('CachedFilelike.open');
     if (this._fileSize != undefined) {
       return;
     }
+    console.log('CachedFilelike.open');
     const { size } = await this._fileReader.open();
     this._fileSize = size;
     if (this._cacheSizeInBytes >= size) {

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 // couldn't get loader to work, just compile with nearleyc https://nearley.js.org/docs/getting-started
 
 function id(x) {

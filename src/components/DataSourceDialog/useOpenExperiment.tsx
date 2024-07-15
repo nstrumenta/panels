@@ -23,7 +23,7 @@ export function useOpenExperiment(): (filePath: string) => Promise<void> {
 
       const dataUrls = [
         await getDownloadURL(
-          ref(firebaseInstance!.storage, '/projects/nst-test/data/recording-1715131746593.mcap')
+          ref(firebaseInstance!.storage, experiment.dataFilePath.replace('.mcap', '.out.mcap'))
         ),
         await getDownloadURL(ref(firebaseInstance!.storage, experiment.dataFilePath)),
       ];

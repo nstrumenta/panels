@@ -32,16 +32,14 @@ import {
   compare,
   fromMillis,
   fromNanoSec,
-  isGreaterThan,
-  isLessThan,
-  toRFC3339String,
   toString,
 } from '@foxglove/rostime';
 import { MessageEvent, ParameterValue } from '@foxglove/studio';
 
 import { BlockLoader } from './BlockLoader';
 import { BufferedIterableSource } from './BufferedIterableSource';
-import { IIterableSource, IteratorResult } from './IIterableSource';
+import { IIterableSource, Initalization, IteratorResult } from './IIterableSource';
+import { settingsActionReducer } from '@base/panels/Indicator/settings';
 
 const log = Log.getLogger(__filename);
 
@@ -160,9 +158,7 @@ export class IterablePlayer implements Player {
     blockLoader?: BlockLoader;
     blockLoadingProcess?: Promise<void>;
     abort?: AbortController;
-    topics: string[];
-    start?: Time;
-    end?: Time;
+    initialization?: Initalization;
   }>;
 
   private _queueEmitState: ReturnType<typeof debouncePromise>;
@@ -294,9 +290,12 @@ export class IterablePlayer implements Player {
       )
     );
     for (const source of this._playerSources) {
-      source.blockLoader?.setTopics(
-        new Set(source.topics.filter((topic) => preloadTopics.has(topic)))
+      const matchingTopics = source.initialization?.topics.filter((topic) =>
+        preloadTopics.has(topic.name)
       );
+      if (matchingTopics) {
+        source.blockLoader?.setTopics(new Set(matchingTopics.map((topic) => topic.name)));
+      }
     }
 
     // If the player is playing, the playing state will detect any subscription changes and adjust
@@ -437,59 +436,7 @@ export class IterablePlayer implements Player {
 
     try {
       for (const source of this._playerSources) {
-        const {
-          start,
-          end,
-          topics,
-          profile,
-          topicStats,
-          problems,
-          publishersByTopic,
-          datatypes,
-          name,
-        } = await source.bufferedSource.initialize();
-
-        source.start = start;
-        source.end = end;
-        source.topics = topics.map((topic) => topic.name);
-
-        this._profile = profile;
-        // _start is the earliest start
-        this._start =
-          this._start === undefined ? start : isLessThan(start, this._start) ? start : this._start;
-        // _end is the last end
-        this._end = this._end === undefined ? end : isGreaterThan(end, this._end) ? end : this._end;
-        this._currentTime = this._start;
-        this._publishedTopics = publishersByTopic;
-        this._providerDatatypes = datatypes;
-        this._name = name ?? this._name;
-        this._seekTarget = this._start;
-
-        // Studio does not like duplicate topics or topics with different datatypes
-        // Check for duplicates or for mismatched datatypes
-        const uniqueTopics = new Map<string, Topic>();
-        for (const topic of topics) {
-          const existingTopic = uniqueTopics.get(topic.name);
-          if (existingTopic) {
-            problems.push({
-              severity: 'warn',
-              message: `Inconsistent datatype for topic: ${topic.name}`,
-              tip: `Topic ${topic.name} has messages with multiple datatypes: ${existingTopic.schemaName}, ${topic.schemaName}. This may result in errors during visualization.`,
-            });
-            continue;
-          }
-
-          uniqueTopics.set(topic.name, topic);
-        }
-
-        this._providerTopics = Array.from(uniqueTopics.values());
-        this._providerTopicStats = topicStats;
-
-        let idx = 0;
-        for (const problem of problems) {
-          this._problemManager.addProblem(`init-problem-${idx}`, problem);
-          idx += 1;
-        }
+        source.initialization = await source.bufferedSource.initialize();
 
         if (this._enablePreload) {
           // --- setup block loader which loads messages for _full_ subscriptions in the "background"
@@ -497,29 +444,32 @@ export class IterablePlayer implements Player {
             source.blockLoader = new BlockLoader({
               cacheSizeBytes: DEFAULT_CACHE_SIZE_BYTES,
               source: source.bufferedSource,
-              start: source.start,
-              end: source.end,
+              start: source.initialization.start,
+              end: source.initialization.end,
               maxBlocks: MAX_BLOCKS,
               minBlockDurationNs: MIN_MEM_CACHE_BLOCK_SIZE_NS,
               problemManager: this._problemManager,
             });
           } catch (err) {
             log.error(err);
-
-            const startStr = toRFC3339String(this._start);
-            const endStr = toRFC3339String(this._end);
-
-            this._problemManager.addProblem('block-loader', {
-              severity: 'warn',
-              message: 'Failed to initialize message preloading',
-              tip: `The start (${startStr}) and end (${endStr}) of your data is too far apart.`,
-              error: err,
-            });
           }
         }
 
         this._presence = PlayerPresence.PRESENT;
       }
+
+      this._start = this._playerSources.reduce((first, playerSource) => {
+        return playerSource.initialization!.start < first.initialization!.start
+          ? playerSource
+          : first;
+      }, this._playerSources[0])?.initialization?.start;
+
+      this._end = this._playerSources.reduce((last, playerSource) => {
+        return playerSource.initialization!.end > last.initialization!.end ? playerSource : last;
+      }, this._playerSources[0])?.initialization?.end;
+
+      this._currentTime = this._start;
+      this._seekTarget = this._start;
     } catch (error) {
       this._setError(`Error initializing: ${error.message}`, error);
     }
@@ -531,10 +481,20 @@ export class IterablePlayer implements Player {
       await delay(START_DELAY_MS);
 
       for (const source of this._playerSources) {
-        source.blockLoader?.setTopics(new Set(source.topics));
+        source.blockLoader?.setTopics(
+          new Set(source.initialization?.topics.map((topic) => topic.name))
+        );
 
-        // Block loadings is constantly running and tries to keep the preloaded messages in memory
-        source.blockLoadingProcess = this.startBlockLoading();
+        source.blockLoadingProcess = source.blockLoader?.startLoading({
+          progress: async (progress) => {
+            this._progress = {
+              fullyLoadedFractionRanges: this._progress.fullyLoadedFractionRanges,
+              messageCache: progress.messageCache,
+            };
+
+            this._queueEmitState();
+          },
+        });
       }
 
       this._setState('start-play');
@@ -560,7 +520,7 @@ export class IterablePlayer implements Player {
       log.debug('Initializing forward iterator from', next);
 
       source.iterator = source.bufferedSource.messageIterator({
-        topics: source.topics,
+        topics: source.initialization?.topics.map((topic) => topic.name) ?? [],
         start: next,
         consumptionType: 'partial',
       });
@@ -605,7 +565,7 @@ export class IterablePlayer implements Player {
       }
 
       source.iterator = source.bufferedSource.messageIterator({
-        topics: source.topics,
+        topics: source.initialization?.topics.map((topic) => topic.name) ?? [],
         start: this._start,
         consumptionType: 'partial',
       });
@@ -624,7 +584,9 @@ export class IterablePlayer implements Player {
     }, 100);
 
     try {
-      for (;;) {
+      let outerBreak = false;
+      while (!outerBreak) {
+        outerBreak = true;
         for (const source of this._playerSources) {
           if (source.iterator == undefined) break;
           const result = await source.iterator.next();
@@ -643,6 +605,7 @@ export class IterablePlayer implements Player {
               `connid-${iterResult.connectionId}`,
               iterResult.problem
             );
+            outerBreak = false;
             continue;
           }
 
@@ -655,9 +618,11 @@ export class IterablePlayer implements Player {
             // The message is past the tick end time, we need to save it for next tick
             if (compare(iterResult.msgEvent.receiveTime, stopTime) > 0) {
               this._lastMessageEvent = iterResult.msgEvent;
+              outerBreak = false;
               break;
             }
 
+            outerBreak = false;
             messageEvents.push(iterResult.msgEvent);
           }
         }
@@ -707,7 +672,7 @@ export class IterablePlayer implements Player {
           const abort = new AbortController();
           source.abort = abort;
           return source.bufferedSource.getBackfillMessages({
-            topics: source.topics,
+            topics: source.initialization?.topics.map((topic) => topic.name) ?? [],
             time: targetTime,
             abortSignal: abort.signal,
           });
@@ -784,10 +749,22 @@ export class IterablePlayer implements Player {
         isPlaying: this._isPlaying,
         speed: this._speed,
         lastSeekTime: this._lastSeekEmitTime,
-        topics: this._providerTopics,
-        topicStats: this._providerTopicStats,
-        datatypes: this._providerDatatypes,
-        publishedTopics: this._publishedTopics,
+        topics: this._playerSources.flatMap((source) => source.initialization?.topics ?? []),
+        topicStats: new Map(
+          this._playerSources.flatMap((source) =>
+            Array.from(source.initialization?.topicStats.entries() ?? [])
+          )
+        ),
+        datatypes: new Map(
+          this._playerSources.flatMap((source) =>
+            Array.from(source.initialization?.datatypes.entries() ?? [])
+          )
+        ),
+        publishedTopics: new Map(
+          this._playerSources.flatMap((source) =>
+            Array.from(source.initialization?.publishersByTopic.entries() ?? [])
+          )
+        ),
       };
     }
 
@@ -974,7 +951,9 @@ export class IterablePlayer implements Player {
     this._presence = PlayerPresence.PRESENT;
     this._queueEmitState();
 
-    for (;;) {
+    let outerBreak = false;
+    while (!outerBreak) {
+      outerBreak = true;
       for (const source of this._playerSources) {
         const abort = (source.abort = new AbortController());
 
@@ -1061,23 +1040,6 @@ export class IterablePlayer implements Player {
       await source.bufferedSource.stopProducer();
       await source.bufferedSource.terminate();
       await source.iterator?.return?.();
-    }
-  }
-
-  private async startBlockLoading() {
-    for (const source of this._playerSources) {
-      //TODO split up progress into playerSources
-      // what to do about emit state?
-      await source.blockLoader?.startLoading({
-        progress: async (progress) => {
-          this._progress = {
-            fullyLoadedFractionRanges: this._progress.fullyLoadedFractionRanges,
-            messageCache: progress.messageCache,
-          };
-
-          this._queueEmitState();
-        },
-      });
     }
   }
 }

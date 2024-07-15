@@ -225,7 +225,7 @@ export default class CachedFilelike implements Filelike {
 
   // Replace the current connection with a new one, spanning a certain range.
   private _setConnection(range: Range): void {
-    this._log.debug(`Setting new connection @ ${rangeToString(range)}`);
+    this._log.debug(`Setting new connection @ ${rangeToString(range)} fileSize=${this._fileSize}`);
 
     if (this._currentConnection) {
       // Destroy the current connection if there is one.

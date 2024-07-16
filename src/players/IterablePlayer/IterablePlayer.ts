@@ -19,10 +19,7 @@ import {
   Progress,
   PublishPayload,
   SubscribePayload,
-  Topic,
-  TopicStats,
 } from '@base/players/types';
-import { RosDatatypes } from '@base/types/RosDatatypes';
 import delay from '@base/util/delay';
 import Log from '@foxglove/log';
 import {
@@ -39,7 +36,6 @@ import { MessageEvent, ParameterValue } from '@foxglove/studio';
 import { BlockLoader } from './BlockLoader';
 import { BufferedIterableSource } from './BufferedIterableSource';
 import { IIterableSource, Initalization, IteratorResult } from './IIterableSource';
-import { settingsActionReducer } from '@base/panels/Indicator/settings';
 
 const log = Log.getLogger(__filename);
 
@@ -122,10 +118,6 @@ export class IterablePlayer implements Player {
   // This is the "lastSeekTime" emitted in the playerState. This indicates the emit is due to a seek.
   private _lastSeekEmitTime: number = Date.now();
 
-  private _providerTopics: Topic[] = [];
-  private _providerTopicStats = new Map<string, TopicStats>();
-  private _providerDatatypes: RosDatatypes = new Map();
-
   private _capabilities: string[] = [
     PlayerCapabilities.setSpeed,
     PlayerCapabilities.playbackControl,
@@ -140,9 +132,6 @@ export class IterablePlayer implements Player {
   private _receivedBytes: number = 0;
   private _hasError = false;
   private _lastRangeMillis?: number;
-  private _lastMessageEvent?: MessageEvent<unknown>;
-  private _lastStamp?: Time;
-  private _publishedTopics = new Map<string, Set<string>>();
   private _seekTarget?: Time;
   private _presence = PlayerPresence.INITIALIZING;
 
@@ -159,6 +148,7 @@ export class IterablePlayer implements Player {
     blockLoadingProcess?: Promise<void>;
     abort?: AbortController;
     initialization?: Initalization;
+    lastMessageEvent?: MessageEvent<unknown>;
   }>;
 
   private _queueEmitState: ReturnType<typeof debouncePromise>;
@@ -571,7 +561,6 @@ export class IterablePlayer implements Player {
       });
     }
 
-    this._lastMessageEvent = undefined;
     this._messages = [];
 
     const messageEvents: MessageEvent<unknown>[] = [];
@@ -584,46 +573,33 @@ export class IterablePlayer implements Player {
     }, 100);
 
     try {
-      let outerBreak = false;
-      while (!outerBreak) {
-        outerBreak = true;
-        for (const source of this._playerSources) {
-          if (source.iterator == undefined) break;
-          const result = await source.iterator.next();
-          if (result.done === true) {
-            break;
-          }
-          const iterResult = result.value;
-          // Bail if a new state is requested while we are loading messages
-          // This usually happens when seeking before the initial load is complete
-          if (this._nextState) {
-            return;
-          }
+      const iteratorDoneArray = this._playerSources.flatMap(() => false);
+      while (!iteratorDoneArray.every((item) => item)) {
+        for (const [index, source] of this._playerSources.entries()) {
+          if (source.iterator == undefined) {
+            iteratorDoneArray[index] = true;
+          } else {
+            const result = await source.iterator.next();
+            if (result.done === true || this._nextState) {
+              iteratorDoneArray[index] = true;
+            } else {
+              const iterResult = result.value;
 
-          if (iterResult.type === 'problem') {
-            this._problemManager.addProblem(
-              `connid-${iterResult.connectionId}`,
-              iterResult.problem
-            );
-            outerBreak = false;
-            continue;
-          }
-
-          if (iterResult.type === 'stamp' && compare(iterResult.stamp, stopTime) >= 0) {
-            this._lastStamp = iterResult.stamp;
-            break;
-          }
-
-          if (iterResult.type === 'message-event') {
-            // The message is past the tick end time, we need to save it for next tick
-            if (compare(iterResult.msgEvent.receiveTime, stopTime) > 0) {
-              this._lastMessageEvent = iterResult.msgEvent;
-              outerBreak = false;
-              break;
+              if (iterResult.type === 'problem') {
+                this._problemManager.addProblem(
+                  `connid-${iterResult.connectionId}`,
+                  iterResult.problem
+                );
+              } else {
+                if (iterResult.type === 'message-event') {
+                  if (compare(iterResult.msgEvent.receiveTime, stopTime) > 0) {
+                    source.lastMessageEvent = iterResult.msgEvent;
+                  } else {
+                    messageEvents.push(iterResult.msgEvent);
+                  }
+                }
+              }
             }
-
-            outerBreak = false;
-            messageEvents.push(iterResult.msgEvent);
           }
         }
       }
@@ -651,8 +627,6 @@ export class IterablePlayer implements Player {
 
     // Ensure the seek time is always within the data source bounds
     const targetTime = clampTime(this._seekTarget, this._start, this._end);
-
-    this._lastMessageEvent = undefined;
 
     // If the backfill does not complete within 100 milliseconds, we emit with no messages to
     // indicate buffering. This provides feedback to the user that we've acknowledged their seek
@@ -694,7 +668,8 @@ export class IterablePlayer implements Player {
       this._lastSeekEmitTime = Date.now();
       this._presence = PlayerPresence.PRESENT;
       this._queueEmitState();
-      await this.resetPlaybackIterator();
+      // TODO: if this is present, the second source doesn't render in the plot
+      // await this.resetPlaybackIterator();
       this._setState(this._isPlaying ? 'play' : 'idle');
     } catch (err) {
       if (this._nextState && err instanceof DOMException && err.name === 'AbortError') {
@@ -824,53 +799,15 @@ export class IterablePlayer implements Player {
     const targetTime = add(this._currentTime, fromMillis(rangeMillis));
     const end: Time = clampTime(targetTime, this._start, this._untilTime ?? this._end);
 
-    // If a lastStamp is available from the previous tick we check the stamp against our current
-    // tick's end time. If this stamp is after our current tick's end time then we don't need to
-    // read any messages and can shortcut the rest of the logic to set the current time to the tick
-    // end time and queue an emit.
-    //
-    // If we have a lastStamp but it isn't after the tick end, then we clear it and proceed with the
-    // tick logic.
-    if (this._lastStamp) {
-      if (compare(this._lastStamp, end) >= 0) {
-        // Wait for the previous render frame to finish
-        await this._queueEmitState.currentPromise;
-
-        this._currentTime = end;
-        this._messages = [];
-        this._queueEmitState();
-
-        if (this._untilTime && compare(this._currentTime, this._untilTime) >= 0) {
-          this.pausePlayback();
-        }
-        return;
-      }
-
-      this._lastStamp = undefined;
-    }
-
     const msgEvents: MessageEvent<unknown>[] = [];
 
     // When ending the previous tick, we might have already read a message from the iterator which
     // belongs to our tick. This logic brings that message into our current batch of message events.
-    if (this._lastMessageEvent) {
-      // If the last message we saw is still ahead of the tick end time, we don't emit anything
-      if (compare(this._lastMessageEvent.receiveTime, end) > 0) {
-        // Wait for the previous render frame to finish
-        await this._queueEmitState.currentPromise;
-
-        this._currentTime = end;
-        this._messages = msgEvents;
-        this._queueEmitState();
-
-        if (this._untilTime && compare(this._currentTime, this._untilTime) >= 0) {
-          this.pausePlayback();
-        }
-        return;
+    for (const source of this._playerSources) {
+      if (source.lastMessageEvent && compare(source.lastMessageEvent.receiveTime, end) <= 0) {
+        msgEvents.push(source.lastMessageEvent);
+        source.lastMessageEvent = undefined;
       }
-
-      msgEvents.push(this._lastMessageEvent);
-      this._lastMessageEvent = undefined;
     }
 
     // If we take too long to read the tick data, we set the player into a BUFFERING presence. This
@@ -883,40 +820,36 @@ export class IterablePlayer implements Player {
 
     try {
       // Read from the iterator through the end of the tick time
-      let outerBreak = false;
-      while (!outerBreak) {
-        outerBreak = true;
-        for (const source of this._playerSources) {
-          if (source.iterator === undefined) break;
-          const result = await source.iterator.next();
-          if (result.done === true || this._nextState) {
-            break;
-          }
-          const iterResult = result.value;
 
-          if (iterResult.type === 'problem') {
-            this._problemManager.addProblem(
-              `connid-${iterResult.connectionId}`,
-              iterResult.problem
-            );
-            continue;
-          }
+      await this.resetPlaybackIterator();
+      const iteratorDoneArray = this._playerSources.flatMap(() => false);
+      while (!iteratorDoneArray.every((item) => item)) {
+        for (const [index, source] of this._playerSources.entries()) {
+          if (source.iterator === undefined) {
+            iteratorDoneArray[index] = true;
+          } else {
+            const result = await source.iterator.next();
+            if (result.done === true || this._nextState) {
+              iteratorDoneArray[index] = true;
+            } else {
+              const iterResult = result.value;
 
-          if (iterResult.type === 'stamp' && compare(iterResult.stamp, end) >= 0) {
-            this._lastStamp = iterResult.stamp;
-            break;
-          }
+              if (iterResult.type === 'problem') {
+                this._problemManager.addProblem(
+                  `connid-${iterResult.connectionId}`,
+                  iterResult.problem
+                );
+                continue;
+              }
 
-          if (iterResult.type === 'message-event') {
-            // The message is past the tick end time, we need to save it for next tick
-            if (compare(iterResult.msgEvent.receiveTime, end) > 0) {
-              this._lastMessageEvent = iterResult.msgEvent;
-              outerBreak = true;
-              break;
+              if (iterResult.type === 'message-event') {
+                if (compare(iterResult.msgEvent.receiveTime, end) > 0) {
+                  this._lastMessageEvent = iterResult.msgEvent;
+                } else {
+                  msgEvents.push(iterResult.msgEvent);
+                }
+              }
             }
-
-            msgEvents.push(iterResult.msgEvent);
-            outerBreak = true;
           }
         }
       }

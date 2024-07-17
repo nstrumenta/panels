@@ -238,11 +238,10 @@ export class BlockLoader {
         consumptionType: 'full',
       };
 
-      // If the source provides a message cursor we use its message cursor, otherwise we make one
-      // using the source's message iterator.
-      const cursor =
-        this.source.getMessageCursor?.({ ...iteratorArgs, abort: this.abortController.signal }) ??
-        new IteratorCursor(this.source.messageIterator(iteratorArgs), this.abortController.signal);
+      const cursor = new IteratorCursor(
+        this.source.messageIterator(iteratorArgs),
+        this.abortController.signal
+      );
 
       for (let currentBlockId = blockId; currentBlockId <= endBlockId; ++currentBlockId) {
         const untilTime = clampTime(this.blockIdToEndTime(currentBlockId), this.start, this.end);

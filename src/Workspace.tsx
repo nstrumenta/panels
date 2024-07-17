@@ -43,7 +43,11 @@ import { StudioLogsSettings, StudioLogsSettingsSidebar } from './components/Stud
 import { SyncAdapters } from './components/SyncAdapters';
 import VariablesList from './components/VariablesList';
 import { WorkspaceDialogs } from './components/WorkspaceDialogs';
-import { LayoutState, useCurrentLayoutSelector } from './context/CurrentLayoutContext';
+import {
+  LayoutState,
+  useCurrentLayoutActions,
+  useCurrentLayoutSelector,
+} from './context/CurrentLayoutContext';
 import { EventsStore, useEvents } from './context/EventsContext';
 import { useNstrumentaContext } from './context/NstrumentaContext';
 import { usePlayerSelection } from './context/PlayerSelectionContext';
@@ -61,6 +65,7 @@ import { useDefaultWebLaunchPreference } from './hooks/useDefaultWebLaunchPrefer
 import { PlayerPresence } from './players/types';
 import { PanelStateContextProvider } from './providers/PanelStateContextProvider';
 import WorkspaceContextProvider from './providers/WorkspaceContextProvider';
+import { LayoutID } from './services/ILayoutStorage';
 
 const useStyles = makeStyles()({
   container: {
@@ -404,12 +409,23 @@ export default function Workspace(props: WorkspaceProps): JSX.Element {
   const { setExperimentPath } = useNstrumentaContext();
   const experimentParam = new URLSearchParams(window.location.search).get('experiment') ?? '';
 
+  const { setSelectedLayoutId } = useCurrentLayoutActions();
+
+  const layoutId = new URLSearchParams(window.location.search).get('layoutId') ?? '';
+
   useEffect(() => {
     // open the experiment from param on a new page load
     if (setExperimentPath && experimentParam && !selectedSource) {
       openExperiment(experimentParam);
     }
   }, [openExperiment, setExperimentPath, selectedSource, experimentParam]);
+
+  useEffect(() => {
+    if (layoutId) {
+      // open the layout from param on a new page load
+      setSelectedLayoutId(layoutId as LayoutID);
+    }
+  }, [layoutId, setSelectedLayoutId]);
 
   return (
     <WorkspaceContextProvider>

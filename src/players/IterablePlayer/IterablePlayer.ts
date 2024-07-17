@@ -149,6 +149,7 @@ export class IterablePlayer implements Player {
     abort?: AbortController;
     initialization?: Initalization;
     lastMessageEvent?: MessageEvent<unknown>;
+    progress?: Progress;
   }>;
 
   private _queueEmitState: ReturnType<typeof debouncePromise>;
@@ -477,12 +478,12 @@ export class IterablePlayer implements Player {
 
         source.blockLoadingProcess = source.blockLoader?.startLoading({
           progress: async (progress) => {
-            this._progress = {
-              fullyLoadedFractionRanges: this._progress.fullyLoadedFractionRanges,
+            source.progress = {
+              fullyLoadedFractionRanges: source.progress?.fullyLoadedFractionRanges ?? [],
               messageCache: progress.messageCache,
             };
 
-            this._queueEmitState();
+            // this._queueEmitState();
           },
         });
       }
@@ -844,7 +845,7 @@ export class IterablePlayer implements Player {
 
               if (iterResult.type === 'message-event') {
                 if (compare(iterResult.msgEvent.receiveTime, end) > 0) {
-                  this._lastMessageEvent = iterResult.msgEvent;
+                  source.lastMessageEvent = iterResult.msgEvent;
                 } else {
                   msgEvents.push(iterResult.msgEvent);
                 }
@@ -909,7 +910,18 @@ export class IterablePlayer implements Player {
         fullyLoadedFractionRanges: this._playerSources.flatMap((source) =>
           source.bufferedSource.loadedRanges()
         ),
-        messageCache: this._progress.messageCache,
+        messageCache: {
+          blocks: this._playerSources.flatMap(
+            (source) => source.progress?.messageCache?.blocks ?? []
+          ),
+          startTime: this._playerSources.reduce(
+            (min, source) =>
+              (source.progress?.messageCache?.startTime ?? min) < min
+                ? source.progress?.messageCache?.startTime ?? min
+                : min,
+            this._playerSources[0].progress!.messageCache!.startTime
+          ),
+        },
       };
       this._queueEmitState();
     }
@@ -931,7 +943,6 @@ export class IterablePlayer implements Player {
           // Playback has ended. Reset internal trackers for maintaining the playback speed.
           this._lastTickMillis = undefined;
           this._lastRangeMillis = undefined;
-          this._lastStamp = undefined;
           this._setState('idle');
           return;
         }

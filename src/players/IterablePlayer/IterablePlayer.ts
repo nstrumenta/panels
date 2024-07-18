@@ -711,7 +711,7 @@ export class IterablePlayer implements Player {
       });
     }
 
-    const messages = this._messages;
+    const messages = this._messages.sort((a, b) => compare(a.receiveTime, b.receiveTime));
     this._messages = [];
 
     let activeData: PlayerStateActiveData | undefined;

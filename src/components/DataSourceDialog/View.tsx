@@ -44,7 +44,7 @@ export default function View(props: PropsWithChildren<ViewProps>): JSX.Element {
       >
         <Button
           startIcon={<ChevronLeftIcon fontSize="large" />}
-          onClick={() => dataSourceDialogActions.open('start')}
+          onClick={() => dataSourceDialogActions.open('nstrumenta')}
           size="large"
         >
           Back

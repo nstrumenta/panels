@@ -119,7 +119,7 @@ export default function DataSourceSidebar(props: Props): JSX.Element {
           key="add-connection"
           color="primary"
           title="New connection"
-          onClick={() => dataSourceDialogActions.open('start')}
+          onClick={() => dataSourceDialogActions.open('nstrumenta')}
         >
           <AddIcon />
         </IconButton>,

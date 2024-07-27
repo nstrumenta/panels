@@ -81,51 +81,27 @@ export type RecentSource = {
   label?: string;
 };
 
-// File data sources accept either file instances or handles
-type FileDataSourceArgs = {
-  type: 'file';
-  files?: File[];
-  handle?: FileSystemFileHandle; // foxglove-depcheck-used: @types/wicg-file-system-access
-  params?: Record<string, string | undefined>;
-};
-
-type ConnectionDataSourceArgs = {
-  type: 'connection';
-  params?: Record<string, string | undefined>;
-};
-
-type NstrumentaDataSourceArgs = {
+export type DataSourceArgs = {
   type: 'nstrumenta';
   params?: { dataUrls: string[] };
 };
-
-export type DataSourceArgs =
-  | FileDataSourceArgs
-  | ConnectionDataSourceArgs
-  | NstrumentaDataSourceArgs;
 
 /**
  * PlayerSelectionContext exposes the available data sources and a function to set the current data source
  */
 export interface PlayerSelection {
   selectSource: (sourceId: string, args?: DataSourceArgs) => void;
-  selectRecent: (recentId: string) => void;
 
   /** Currently selected data source */
   selectedSource?: IDataSourceFactory;
 
   /** List of available data sources */
   availableSources: IDataSourceFactory[];
-
-  /** Recently selected sources */
-  recentSources: RecentSource[];
 }
 
 const PlayerSelectionContext = createContext<PlayerSelection>({
   selectSource: () => {},
-  selectRecent: () => {},
   availableSources: [],
-  recentSources: [],
 });
 PlayerSelectionContext.displayName = 'PlayerSelectionContext';
 

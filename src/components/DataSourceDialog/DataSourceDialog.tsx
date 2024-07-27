@@ -4,13 +4,11 @@
 
 import CloseIcon from '@mui/icons-material/Close';
 import { Dialog, IconButton } from '@mui/material';
-import { useCallback, useLayoutEffect, useMemo } from 'react';
-import { useMountedState } from 'react-use';
+import { useCallback } from 'react';
 import { makeStyles } from 'tss-react/mui';
 
 import Stack from '@base/components/Stack';
 import { useAnalytics } from '@base/context/AnalyticsContext';
-import { usePlayerSelection } from '@base/context/PlayerSelectionContext';
 import {
   WorkspaceContextStore,
   useWorkspaceActions,
@@ -19,9 +17,8 @@ import {
 import { AppEvent } from '@base/services/IAnalytics';
 
 import StartNstrumenta from './StartNstrumenta';
-import { useOpenFile } from './useOpenFile';
 
-const DataSourceDialogItems = ['start', 'file', 'nstrumenta'] as const;
+const DataSourceDialogItems = ['nstrumenta'] as const;
 export type DataSourceDialogItem = (typeof DataSourceDialogItems)[number];
 
 const useStyles = makeStyles()((theme) => ({
@@ -40,17 +37,8 @@ const selectDataSourceDialog = (store: WorkspaceContextStore) => store.dataSourc
 
 export function DataSourceDialog(): JSX.Element {
   const { classes } = useStyles();
-  const { availableSources, selectSource } = usePlayerSelection();
   const { dataSourceDialogActions } = useWorkspaceActions();
-  const { activeDataSource, item: activeView } = useWorkspaceStore(selectDataSourceDialog);
-
-  const isMounted = useMountedState();
-
-  const openFile = useOpenFile(availableSources);
-
-  const firstSampleSource = useMemo(() => {
-    return availableSources.find((source) => source.type === 'nstrumenta');
-  }, [availableSources]);
+  const { activeDataSource } = useWorkspaceStore(selectDataSourceDialog);
 
   const analytics = useAnalytics();
 
@@ -58,20 +46,6 @@ export function DataSourceDialog(): JSX.Element {
     void analytics.logEvent(AppEvent.DIALOG_CLOSE, { activeDataSource });
     dataSourceDialogActions.close();
   }, [dataSourceDialogActions, analytics, activeDataSource]);
-
-  useLayoutEffect(() => {
-    if (activeView === 'file') {
-      openFile()
-        .catch((err) => {
-          console.error(err);
-        })
-        .finally(() => {
-          if (isMounted()) {
-            dataSourceDialogActions.open('start');
-          }
-        });
-    }
-  }, [activeView, dataSourceDialogActions, firstSampleSource, isMounted, openFile, selectSource]);
 
   return (
     <Dialog

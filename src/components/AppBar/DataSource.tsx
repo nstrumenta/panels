@@ -110,7 +110,7 @@ export function DataSource(): JSX.Element {
 
   const [problemModal, setProblemModal] = useState<JSX.Element | undefined>(undefined);
 
-  const openDataSourceDialog = () => dataSourceDialogActions.open('start');
+  const openDataSourceDialog = () => dataSourceDialogActions.open('nstrumenta');
 
   if (playerPresence === PlayerPresence.NOT_PRESENT) {
     return (

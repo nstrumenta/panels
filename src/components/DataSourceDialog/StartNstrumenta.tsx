@@ -2,20 +2,17 @@
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
-import { Button, Link, List, ListItem, ListItemButton, SvgIcon, Typography } from '@mui/material';
-import { useEffect, useMemo } from 'react';
+import { Typography } from '@mui/material';
+import { useEffect } from 'react';
 import { makeStyles } from 'tss-react/mui';
 
 import { useOpenExperiment } from '@base/components/DataSourceDialog/useOpenExperiment';
 import ExperimentList from '@base/components/ExperimentList';
+import NstrumentaProjectSelect from '@base/components/NstrumentaProjectSelect';
 import Stack from '@base/components/Stack';
-import TextMiddleTruncate from '@base/components/TextMiddleTruncate';
-import { useAnalytics } from '@base/context/AnalyticsContext';
+import { useNstrumentaContext } from '@base/context/NstrumentaContext';
 import { usePlayerSelection } from '@base/context/PlayerSelectionContext';
 import { useWorkspaceActions } from '@base/context/WorkspaceContext';
-import { AppEvent } from '@base/services/IAnalytics';
-import NstrumentaProjectSelect from '@base/components/NstrumentaProjectSelect';
-import { useNstrumentaContext } from '@base/context/NstrumentaContext';
 
 const useStyles = makeStyles()((theme) => ({
   logo: {
@@ -82,52 +79,9 @@ const useStyles = makeStyles()((theme) => ({
   },
 }));
 
-type DataSourceOptionProps = {
-  text: string;
-  secondaryText: string;
-  icon: JSX.Element;
-  onClick: () => void;
-  href?: string;
-  target: '_blank';
-};
-
-function DataSourceOption(props: DataSourceOptionProps): JSX.Element {
-  const { icon, onClick, text, secondaryText, href, target } = props;
-  const { classes } = useStyles();
-  const button = (
-    <Button
-      className={classes.connectionButton}
-      fullWidth
-      color="inherit"
-      variant="outlined"
-      size="large"
-      startIcon={icon}
-      onClick={onClick}
-    >
-      <Stack flex="auto" zeroMinWidth>
-        <Typography variant="subtitle1" color="text.primary">
-          {text}
-        </Typography>
-        <Typography variant="body2" color="text.secondary" noWrap>
-          {secondaryText}
-        </Typography>
-      </Stack>
-    </Button>
-  );
-
-  return href ? (
-    <Link href={href} target={target} style={{ textDecoration: 'none' }}>
-      {button}
-    </Link>
-  ) : (
-    button
-  );
-}
-
 export default function StartNstrumenta(): JSX.Element {
-  const { recentSources, selectRecent, selectedSource } = usePlayerSelection();
+  const { selectedSource } = usePlayerSelection();
   const { classes } = useStyles();
-  const analytics = useAnalytics();
   const { dataSourceDialogActions } = useWorkspaceActions();
   const openExperiment = useOpenExperiment();
 
@@ -143,25 +97,6 @@ export default function StartNstrumenta(): JSX.Element {
     }
   }, [openExperiment, setExperimentPath, selectedSource, experimentParam, dataSourceDialogActions]);
 
-  const startItems = useMemo(() => {
-    return [
-      {
-        key: 'open-local-file',
-        text: 'openLocalFile',
-        secondaryText: 'openLocalFileDescription',
-        icon: (
-          <SvgIcon fontSize="large" color="primary" viewBox="0 0 2048 2048">
-            <path d="M1955 1533l-163-162v677h-128v-677l-163 162-90-90 317-317 317 317-90 90zM256 1920h1280v128H128V0h1115l549 549v475h-128V640h-512V128H256v1792zM1280 512h293l-293-293v293z" />
-          </SvgIcon>
-        ),
-        onClick: () => {
-          dataSourceDialogActions.open('file');
-          void analytics.logEvent(AppEvent.DIALOG_SELECT_VIEW, { type: 'local' });
-        },
-      },
-    ];
-  }, [analytics, dataSourceDialogActions]);
-
   return (
     <Stack className={classes.grid}>
       <header className={classes.header}></header>
@@ -171,40 +106,7 @@ export default function StartNstrumenta(): JSX.Element {
             <Typography variant="h5" gutterBottom>
               {'openDataSource'}
             </Typography>
-            {startItems.map((item) => (
-              <DataSourceOption
-                key={item.key}
-                text={item.text}
-                secondaryText={item.secondaryText}
-                icon={item.icon}
-                onClick={item.onClick}
-                target="_blank"
-              />
-            ))}
           </Stack>
-          {recentSources.length > 0 && (
-            <Stack gap={1}>
-              <Typography variant="h5" gutterBottom>
-                {'recentDataSources'}
-              </Typography>
-              <List disablePadding>
-                {recentSources.slice(0, 5).map((recent) => (
-                  <ListItem disablePadding key={recent.id} id={recent.id}>
-                    <ListItemButton
-                      disableGutters
-                      onClick={() => selectRecent(recent.id)}
-                      className={classes.recentListItemButton}
-                    >
-                      <TextMiddleTruncate
-                        className={classes.recentSourceSecondary}
-                        text={recent.title}
-                      />
-                    </ListItemButton>
-                  </ListItem>
-                ))}
-              </List>
-            </Stack>
-          )}
           <Stack gap={1}>
             <Typography variant="h5" gutterBottom>
               Nstrumenta Project

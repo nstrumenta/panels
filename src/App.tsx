@@ -26,14 +26,13 @@ import LayoutManagerProvider from './providers/LayoutManagerProvider';
 import PanelCatalogProvider from './providers/PanelCatalogProvider';
 import UserProfileLocalStorageProvider from './providers/UserProfileLocalStorageProvider';
 
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 
 import { AppSetting } from './AppSetting';
 
-import { FirebaseApp, initializeApp } from 'firebase/app';
-import { Auth, User, getAuth, onAuthStateChanged } from 'firebase/auth';
-import { FirebaseStorage, getStorage } from 'firebase/storage';
-import NstrumentaDataSourceFactory from './dataSources/NstrumentaDataSourceFactory';
+import { FirebaseApp } from 'firebase/app';
+import { Auth, User } from 'firebase/auth';
+import { FirebaseStorage } from 'firebase/storage';
 import ExtensionCatalogProvider from './providers/ExtensionCatalogProvider';
 import ExtensionMarketplaceProvider from './providers/ExtensionMarketplaceProvider';
 import LocalStorageAppConfiguration from './services/LocalStorageAppConfiguration';
@@ -66,45 +65,6 @@ export function App(): JSX.Element {
     []
   );
 
-  const { search } = window.location;
-
-  const nstrumentaOrg = new URLSearchParams(search).get('org') ?? '';
-
-  const firebaseConfigPath = `https://storage.googleapis.com/${nstrumentaOrg}-config/firebaseConfig.json`;
-
-  const [firebaseInstance, setFirebaseInstance] = useState<FirebaseInstance>();
-
-  const fetchConfig = async () => {
-    const fetchedFirebaseConfig = await (await fetch(firebaseConfigPath)).json();
-    console.log(fetchedFirebaseConfig);
-    const app = initializeApp(fetchedFirebaseConfig);
-    const storage = getStorage(app);
-    const auth = getAuth(app);
-
-    onAuthStateChanged(auth, (nextUser) => {
-      if (nextUser) {
-        setFirebaseInstance({ app, storage, auth, user: nextUser });
-      } else {
-        setFirebaseInstance({ app, storage, auth, user: undefined });
-      }
-    });
-  };
-
-  const dataSources = useMemo(() => {
-    if (!firebaseInstance) return [];
-    const sources = [new NstrumentaDataSourceFactory(firebaseInstance)];
-
-    return sources;
-  }, [firebaseInstance]);
-
-  const init = async () => {
-    await fetchConfig();
-  };
-
-  useEffect(() => {
-    void init();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   useEffect(() => {
     document.addEventListener('contextmenu', contextMenuHandler);
@@ -126,7 +86,7 @@ export function App(): JSX.Element {
                         <CurrentLayoutProvider>
                           <ExtensionMarketplaceProvider>
                             <ExtensionCatalogProvider loaders={[]}>
-                              <PlayerManager playerSources={dataSources}>
+                              <PlayerManager>
                                 <EventsProvider>
                                   <DocumentTitleAdapter />
                                   <SendNotificationToastAdapter />

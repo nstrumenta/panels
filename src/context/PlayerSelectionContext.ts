@@ -90,18 +90,11 @@ export type DataSourceArgs = {
  * PlayerSelectionContext exposes the available data sources and a function to set the current data source
  */
 export interface PlayerSelection {
-  selectSource: (sourceId: string, args?: DataSourceArgs) => void;
-
-  /** Currently selected data source */
-  selectedSource?: IDataSourceFactory;
-
-  /** List of available data sources */
-  availableSources: IDataSourceFactory[];
+  selectSource: (sourceId: string, args: DataSourceArgs) => void;
 }
 
 const PlayerSelectionContext = createContext<PlayerSelection>({
   selectSource: () => {},
-  availableSources: [],
 });
 PlayerSelectionContext.displayName = 'PlayerSelectionContext';
 

@@ -11,81 +11,86 @@
 //   found at http://www.apache.org/licenses/LICENSE-2.0
 //   You may not use this file except in compliance with the License.
 
-import { useSnackbar } from 'notistack';
-import { PropsWithChildren, useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 
 import { MessagePipelineProvider } from '@base/components/MessagePipeline';
 import { useAnalytics } from '@base/context/AnalyticsContext';
+import { useNstrumentaContext } from '@base/context/NstrumentaContext';
 import PlayerSelectionContext, {
   DataSourceArgs,
-  IDataSourceFactory,
   PlayerSelection,
 } from '@base/context/PlayerSelectionContext';
-import useWarnImmediateReRender from '@base/hooks/useWarnImmediateReRender';
 import AnalyticsMetricsCollector from '@base/players/AnalyticsMetricsCollector';
+import { IterablePlayer } from '@base/players/IterablePlayer/IterablePlayer';
+import { McapIterableSource } from '@base/players/IterablePlayer/Mcap/McapIterableSource';
 import { Player } from '@base/players/types';
 import Logger from '@foxglove/log';
+import { collection, getFirestore, onSnapshot } from 'firebase/firestore';
 
 const log = Logger.getLogger(__filename);
 
-type PlayerManagerProps = {
-  playerSources: IDataSourceFactory[];
+type Props = {
+  children: React.ReactNode;
 };
 
-export default function PlayerManager(props: PropsWithChildren<PlayerManagerProps>): JSX.Element {
-  const { children, playerSources } = props;
-
-  useWarnImmediateReRender();
-
+export default function PlayerManager(props: Props): JSX.Element {
+  const { children } = props;
   const analytics = useAnalytics();
   const metricsCollector = useMemo(() => new AnalyticsMetricsCollector(analytics), [analytics]);
-
+  const { firebaseInstance, projectId } = useNstrumentaContext();
   const [player, setPlayer] = useState<Player | undefined>();
 
-  const [selectedSource, setSelectedSource] = useState<IDataSourceFactory | undefined>();
-
-  const { enqueueSnackbar } = useSnackbar();
-
   const selectSource = useCallback(
-    async (sourceId: string, args?: DataSourceArgs) => {
+    async (sourceId: string, args: DataSourceArgs) => {
+      if (!firebaseInstance) return;
       log.debug(`Select Source: ${sourceId}`);
 
-      const foundSource = playerSources.find(
-        (source) => source.id === sourceId || source.legacyIds?.includes(sourceId)
-      );
-      if (!foundSource) {
-        enqueueSnackbar(`Unknown data source: ${sourceId}`, { variant: 'warning' });
-        return;
-      }
+      const dataCollectionPath = `projects/${projectId}/data`;
+
+      const { dataUrls } = args.params!;
+
+      const sources = (dataUrls as string[]).map((dataUrl) => new McapIterableSource(dataUrl));
+
+      const iterablePlayer = new IterablePlayer({
+        sources,
+        isSampleDataSource: true,
+        name: 'nstrumenta',
+        metricsCollector,
+        // Use blank url params so the data source is set in the url
+        urlParams: {},
+        sourceId,
+      });
+
+      const db = getFirestore(firebaseInstance.app);
+      const collectionRef = collection(db, dataCollectionPath);
+      onSnapshot(collectionRef, (snapshot) => {
+        snapshot.docChanges().forEach((change) => {
+          // Handle document changes here
+          const doc = change.doc;
+          if (change.type === 'added') {
+            // Document added
+            console.log('Document added:', doc.data());
+          }
+          if (change.type === 'modified') {
+            // Document modified
+            console.log('Document modified:', doc.data());
+          }
+          if (change.type === 'removed') {
+            // Document removed
+            console.log('Document removed:', doc.data());
+          }
+        });
+      });
 
       metricsCollector.setProperty('player', sourceId);
 
-      // Sample sources don't need args or prompts to initialize
-      if (foundSource.type === 'nstrumenta') {
-        const params = args?.params;
-        const newPlayer = await foundSource.initialize({
-          params,
-          metricsCollector,
-        });
-
-        setPlayer(newPlayer);
-        setSelectedSource(foundSource);
-
-        return;
-      }
-
-      if (!args) {
-        enqueueSnackbar('Unable to initialize player: no args', { variant: 'error' });
-        return;
-      }
+      setPlayer(iterablePlayer);
     },
-    [playerSources, metricsCollector, enqueueSnackbar]
+    [firebaseInstance, metricsCollector, projectId]
   );
 
   const value: PlayerSelection = {
     selectSource,
-    selectedSource,
-    availableSources: playerSources,
   };
 
   return (

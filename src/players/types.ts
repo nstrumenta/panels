@@ -87,7 +87,6 @@ export type PlayerProblem = {
 };
 
 export type PlayerURLState = DeepReadonly<{
-  sourceId: string;
   parameters?: Record<string, string>;
 }>;
 

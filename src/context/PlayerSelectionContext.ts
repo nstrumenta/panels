@@ -7,6 +7,7 @@ import { createContext, useContext } from 'react';
 import { LayoutData } from '@base/context/CurrentLayoutContext/actions';
 import { Player, PlayerMetricsCollectorInterface } from '@base/players/types';
 import { RegisteredIconNames } from '@base/types/Icons';
+import { NstrumentaExperiment } from './NstrumentaContext';
 
 export type DataSourceFactoryInitializeArgs = {
   metricsCollector: PlayerMetricsCollectorInterface;
@@ -71,26 +72,10 @@ export interface IDataSourceFactory {
 }
 
 /**
- * Recently selected source information
- *
- * The _id_ is opaque and up to the PlayerSelectionContext implementation.
- */
-export type RecentSource = {
-  id: string;
-  title: string;
-  label?: string;
-};
-
-export type DataSourceArgs = {
-  type: 'nstrumenta';
-  params?: { dataUrls: string[] };
-};
-
-/**
  * PlayerSelectionContext exposes the available data sources and a function to set the current data source
  */
 export interface PlayerSelection {
-  selectSource: (sourceId: string, args: DataSourceArgs) => void;
+  selectSource: (experiment: NstrumentaExperiment) => void;
 }
 
 const PlayerSelectionContext = createContext<PlayerSelection>({

@@ -21,6 +21,7 @@ export type NstrumentaLabels = {
 export type NstrumentaExperiment = {
   experimentFilepath: string;
   dataFilePath: string;
+  dirname: string;
   layoutFilePath: string;
   labelFiles: NstrumentaLabels[];
   videos: NstrumentaVideo[];

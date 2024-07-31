@@ -64,16 +64,11 @@ const SEEK_ON_START_NS = BigInt(99 * 1e6);
 type IterablePlayerOptions = {
   metricsCollector?: PlayerMetricsCollectorInterface;
 
-  sources: Array<IIterableSource>;
-
   // Optional player name
   name?: string;
 
   // Optional set of key/values to store with url handling
   urlParams?: Record<string, string>;
-
-  // Source identifier used in constructing state urls.
-  sourceId: string;
 
   isSampleDataSource?: boolean;
 
@@ -141,35 +136,33 @@ export class IterablePlayer implements Player {
 
   private _problemManager = new PlayerProblemManager();
 
-  private _playerSources: Array<{
-    bufferedSource: BufferedIterableSource;
-    iterator?: AsyncIterator<Readonly<IteratorResult>>;
-    blockLoader?: BlockLoader;
-    blockLoadingProcess?: Promise<void>;
-    abort?: AbortController;
-    initialization?: Initalization;
-    lastMessageEvent?: MessageEvent<unknown>;
-    progress?: Progress;
-  }>;
+  private _playerSources: Map<
+    string,
+    {
+      bufferedSource: BufferedIterableSource;
+      iterator?: AsyncIterator<Readonly<IteratorResult>>;
+      blockLoader?: BlockLoader;
+      blockLoadingProcess?: Promise<void>;
+      abort?: AbortController;
+      initialization?: Initalization;
+      lastMessageEvent?: MessageEvent<unknown>;
+      progress?: Progress;
+    }
+  >;
 
   private _queueEmitState: ReturnType<typeof debouncePromise>;
-
-  private readonly _sourceId: string;
 
   private _untilTime?: Time;
 
   public constructor(options: IterablePlayerOptions) {
-    const { metricsCollector, urlParams, sources, name, enablePreload, sourceId } = options;
+    const { metricsCollector, urlParams, name, enablePreload } = options;
 
-    this._playerSources = sources.map((source) => {
-      return { bufferedSource: new BufferedIterableSource(source), topics: [] };
-    });
+    this._playerSources = new Map();
     this._name = name;
     this._urlParams = urlParams;
     this._metricsCollector = metricsCollector ?? new NoopMetricsCollector();
     this._metricsCollector.playerConstructed();
     this._enablePreload = enablePreload ?? true;
-    this._sourceId = sourceId;
 
     // Wrap emitStateImpl in a debouncePromise for our states to call. Since we can emit from states
     // or from block loading updates we use debouncePromise to guard against concurrent emits.
@@ -280,7 +273,7 @@ export class IterablePlayer implements Player {
         sub.preloadType !== 'partial' ? sub.topic : undefined
       )
     );
-    for (const source of this._playerSources) {
+    for (const source of this._playerSources.values()) {
       const matchingTopics = source.initialization?.topics.filter((topic) =>
         preloadTopics.has(topic.name)
       );
@@ -301,6 +294,14 @@ export class IterablePlayer implements Player {
         this._setState('seek-backfill');
       }
     }
+  }
+
+  public addSource(id: string, source: IIterableSource): void {
+    const bufferedSource = new BufferedIterableSource(source);
+    this._playerSources.set(id, {
+      bufferedSource,
+    });
+    this._setState('initialize');
   }
 
   public setPublishers(_publishers: AdvertiseOptions[]): void {
@@ -332,7 +333,7 @@ export class IterablePlayer implements Player {
     console.log('_setState', newState);
     log.debug(`Set next state: ${newState}`);
     this._nextState = newState;
-    for (const source of this._playerSources) {
+    for (const source of this._playerSources.values()) {
       if (source.abort) {
         source.abort.abort();
         source.abort = undefined;
@@ -361,7 +362,7 @@ export class IterablePlayer implements Player {
 
         // If we are going into a state other than play or idle we throw away the playback iterator since
         // we will need to make a new one.
-        for (const source of this._playerSources) {
+        for (const source of this._playerSources.values()) {
           if (state !== 'idle' && state !== 'play' && source.iterator !== undefined) {
             log.debug('Ending playback iterator because next state is not IDLE or PLAY');
 
@@ -426,7 +427,8 @@ export class IterablePlayer implements Player {
     this._queueEmitState();
 
     try {
-      for (const source of this._playerSources) {
+      for (const [key, source] of this._playerSources.entries()) {
+        log.debug(`Initializing source ${key}`);
         source.initialization = await source.bufferedSource.initialize();
 
         if (this._enablePreload) {
@@ -449,15 +451,17 @@ export class IterablePlayer implements Player {
         this._presence = PlayerPresence.PRESENT;
       }
 
-      this._start = this._playerSources.reduce((first, playerSource) => {
+      const playerSourcesArray = Array.from(this._playerSources.values());
+
+      this._start = playerSourcesArray.reduce((first, playerSource) => {
         return playerSource.initialization!.start < first.initialization!.start
           ? playerSource
           : first;
-      }, this._playerSources[0])?.initialization?.start;
+      }, playerSourcesArray[0])?.initialization?.start;
 
-      this._end = this._playerSources.reduce((last, playerSource) => {
+      this._end = playerSourcesArray.reduce((last, playerSource) => {
         return playerSource.initialization!.end > last.initialization!.end ? playerSource : last;
-      }, this._playerSources[0])?.initialization?.end;
+      }, playerSourcesArray[0])?.initialization?.end;
 
       this._currentTime = this._start;
       this._seekTarget = this._start;
@@ -471,7 +475,7 @@ export class IterablePlayer implements Player {
       // playback.
       await delay(START_DELAY_MS);
 
-      for (const source of this._playerSources) {
+      for (const source of this._playerSources.values()) {
         source.blockLoader?.setTopics(
           new Set(source.initialization?.topics.map((topic) => topic.name))
         );
@@ -500,7 +504,7 @@ export class IterablePlayer implements Player {
     const next = add(this._currentTime, { sec: 0, nsec: 1 });
 
     log.debug('Ending previous iterator');
-    for (const source of this._playerSources) {
+    for (const source of this._playerSources.values()) {
       if (source.iterator) {
         await source.iterator.return?.();
       }
@@ -550,7 +554,7 @@ export class IterablePlayer implements Player {
     log.debug(`Playing from ${toString(this._start)} to ${toString(stopTime)}`);
 
     log.debug('Initializing forward iterator from', this._start);
-    for (const source of this._playerSources) {
+    for (const source of this._playerSources.values()) {
       if (source.iterator) {
         await source.iterator.return?.();
       }
@@ -574,15 +578,18 @@ export class IterablePlayer implements Player {
     }, 100);
 
     try {
-      const iteratorDoneArray = this._playerSources.flatMap(() => false);
-      while (!iteratorDoneArray.every((item) => item)) {
-        for (const [index, source] of this._playerSources.entries()) {
+      const iteratorDoneMap = new Map<string, boolean>();
+      for (const key of this._playerSources.keys()) {
+        iteratorDoneMap.set(key, false);
+      }
+      while (![...iteratorDoneMap.values()].every((item) => item)) {
+        for (const [key, source] of this._playerSources.entries()) {
           if (source.iterator == undefined) {
-            iteratorDoneArray[index] = true;
+            iteratorDoneMap.set(key, true);
           } else {
             const result = await source.iterator.next();
             if (result.done === true || this._nextState) {
-              iteratorDoneArray[index] = true;
+              iteratorDoneMap.set(key, true);
             } else {
               const iterResult = result.value;
 
@@ -643,7 +650,7 @@ export class IterablePlayer implements Player {
 
     try {
       const allMessages = await Promise.all(
-        this._playerSources.map((source) => {
+        Array.from(this._playerSources.entries()).map(([_key, source]) => {
           const abort = new AbortController();
           source.abort = abort;
           return source.bufferedSource.getBackfillMessages({
@@ -705,7 +712,6 @@ export class IterablePlayer implements Player {
         activeData: undefined,
         problems: this._problemManager.problems(),
         urlState: {
-          sourceId: this._sourceId,
           parameters: this._urlParams,
         },
       });
@@ -725,19 +731,21 @@ export class IterablePlayer implements Player {
         isPlaying: this._isPlaying,
         speed: this._speed,
         lastSeekTime: this._lastSeekEmitTime,
-        topics: this._playerSources.flatMap((source) => source.initialization?.topics ?? []),
+        topics: Array.from(this._playerSources.values()).flatMap(
+          (source) => source.initialization?.topics ?? []
+        ),
         topicStats: new Map(
-          this._playerSources.flatMap((source) =>
+          Array.from(this._playerSources.values()).flatMap((source) =>
             Array.from(source.initialization?.topicStats.entries() ?? [])
           )
         ),
         datatypes: new Map(
-          this._playerSources.flatMap((source) =>
+          Array.from(this._playerSources.values()).flatMap((source) =>
             Array.from(source.initialization?.datatypes.entries() ?? [])
           )
         ),
         publishedTopics: new Map(
-          this._playerSources.flatMap((source) =>
+          Array.from(this._playerSources.values()).flatMap((source) =>
             Array.from(source.initialization?.publishersByTopic.entries() ?? [])
           )
         ),
@@ -754,7 +762,6 @@ export class IterablePlayer implements Player {
       problems: this._problemManager.problems(),
       activeData,
       urlState: {
-        sourceId: this._sourceId,
         parameters: this._urlParams,
       },
     };
@@ -804,7 +811,7 @@ export class IterablePlayer implements Player {
 
     // When ending the previous tick, we might have already read a message from the iterator which
     // belongs to our tick. This logic brings that message into our current batch of message events.
-    for (const source of this._playerSources) {
+    for (const source of this._playerSources.values()) {
       if (source.lastMessageEvent && compare(source.lastMessageEvent.receiveTime, end) <= 0) {
         msgEvents.push(source.lastMessageEvent);
         source.lastMessageEvent = undefined;
@@ -823,15 +830,18 @@ export class IterablePlayer implements Player {
       // Read from the iterator through the end of the tick time
 
       await this.resetPlaybackIterator();
-      const iteratorDoneArray = this._playerSources.flatMap(() => false);
-      while (!iteratorDoneArray.every((item) => item)) {
-        for (const [index, source] of this._playerSources.entries()) {
-          if (source.iterator === undefined) {
-            iteratorDoneArray[index] = true;
+      const iteratorDoneMap = new Map<string, boolean>();
+      for (const key of this._playerSources.keys()) {
+        iteratorDoneMap.set(key, false);
+      }
+      while (![...iteratorDoneMap.values()].every((item) => item)) {
+        for (const [key, source] of this._playerSources.entries()) {
+          if (source.iterator == undefined) {
+            iteratorDoneMap.set(key, true);
           } else {
             const result = await source.iterator.next();
             if (result.done === true || this._nextState) {
-              iteratorDoneArray[index] = true;
+              iteratorDoneMap.set(key, true);
             } else {
               const iterResult = result.value;
 
@@ -888,7 +898,7 @@ export class IterablePlayer implements Player {
     let outerBreak = false;
     while (!outerBreak) {
       outerBreak = true;
-      for (const source of this._playerSources) {
+      for (const source of this._playerSources.values()) {
         const abort = (source.abort = new AbortController());
 
         const aborted = new Promise<void>((resolve) => {
@@ -907,19 +917,19 @@ export class IterablePlayer implements Player {
       }
 
       this._progress = {
-        fullyLoadedFractionRanges: this._playerSources.flatMap((source) =>
+        fullyLoadedFractionRanges: Array.from(this._playerSources.values()).flatMap((source) =>
           source.bufferedSource.loadedRanges()
         ),
         messageCache: {
-          blocks: this._playerSources.flatMap(
+          blocks: Array.from(this._playerSources.values()).flatMap(
             (source) => source.progress?.messageCache?.blocks ?? []
           ),
-          startTime: this._playerSources.reduce(
+          startTime: Array.from(this._playerSources.values()).reduce(
             (min, source) =>
               (source.progress?.messageCache?.startTime ?? min) < min
                 ? source.progress?.messageCache?.startTime ?? min
                 : min,
-            this._playerSources[0].progress!.messageCache!.startTime
+            Array.from(this._playerSources.values())[0].progress!.messageCache!.startTime
           ),
         },
       };
@@ -956,7 +966,7 @@ export class IterablePlayer implements Player {
         }
 
         this._progress = {
-          fullyLoadedFractionRanges: this._playerSources.flatMap((source) =>
+          fullyLoadedFractionRanges: Array.from(this._playerSources.values()).flatMap((source) =>
             source.bufferedSource.loadedRanges()
           ),
           messageCache: this._progress.messageCache,
@@ -978,7 +988,7 @@ export class IterablePlayer implements Player {
   private async _stateClose() {
     this._isPlaying = false;
     this._metricsCollector.close();
-    for (const source of this._playerSources) {
+    for (const source of this._playerSources.values()) {
       await source.blockLoader?.stopLoading();
       await source.blockLoadingProcess;
       await source.bufferedSource.stopProducer();

@@ -15,17 +15,15 @@ import { useCallback, useMemo, useState } from 'react';
 
 import { MessagePipelineProvider } from '@base/components/MessagePipeline';
 import { useAnalytics } from '@base/context/AnalyticsContext';
-import { useNstrumentaContext } from '@base/context/NstrumentaContext';
-import PlayerSelectionContext, {
-  DataSourceArgs,
-  PlayerSelection,
-} from '@base/context/PlayerSelectionContext';
+import { NstrumentaExperiment, useNstrumentaContext } from '@base/context/NstrumentaContext';
+import PlayerSelectionContext, { PlayerSelection } from '@base/context/PlayerSelectionContext';
 import AnalyticsMetricsCollector from '@base/players/AnalyticsMetricsCollector';
 import { IterablePlayer } from '@base/players/IterablePlayer/IterablePlayer';
 import { McapIterableSource } from '@base/players/IterablePlayer/Mcap/McapIterableSource';
 import { Player } from '@base/players/types';
 import Logger from '@foxglove/log';
-import { collection, getFirestore, onSnapshot } from 'firebase/firestore';
+import { collection, getFirestore, onSnapshot, query, where } from 'firebase/firestore';
+import { getDownloadURL, ref } from 'firebase/storage';
 
 const log = Logger.getLogger(__filename);
 
@@ -41,48 +39,64 @@ export default function PlayerManager(props: Props): JSX.Element {
   const [player, setPlayer] = useState<Player | undefined>();
 
   const selectSource = useCallback(
-    async (sourceId: string, args: DataSourceArgs) => {
+    async (experiment: NstrumentaExperiment) => {
       if (!firebaseInstance) return;
-      log.debug(`Select Source: ${sourceId}`);
+      log.debug(`Select Source: ${experiment.experimentFilepath}`);
 
       const dataCollectionPath = `projects/${projectId}/data`;
 
-      const { dataUrls } = args.params!;
-
-      const sources = (dataUrls as string[]).map((dataUrl) => new McapIterableSource(dataUrl));
+      const dataUrl = await getDownloadURL(ref(firebaseInstance!.storage, experiment.dataFilePath));
 
       const iterablePlayer = new IterablePlayer({
-        sources,
         isSampleDataSource: true,
         name: 'nstrumenta',
         metricsCollector,
         // Use blank url params so the data source is set in the url
         urlParams: {},
-        sourceId,
       });
+
+      iterablePlayer.addSource(experiment.dataFilePath, new McapIterableSource(dataUrl));
 
       const db = getFirestore(firebaseInstance.app);
       const collectionRef = collection(db, dataCollectionPath);
-      onSnapshot(collectionRef, (snapshot) => {
-        snapshot.docChanges().forEach((change) => {
-          // Handle document changes here
-          const doc = change.doc;
-          if (change.type === 'added') {
-            // Document added
-            console.log('Document added:', doc.data());
-          }
-          if (change.type === 'modified') {
-            // Document modified
-            console.log('Document modified:', doc.data());
-          }
-          if (change.type === 'removed') {
-            // Document removed
-            console.log('Document removed:', doc.data());
-          }
-        });
-      });
 
-      metricsCollector.setProperty('player', sourceId);
+      // watch for files in dirname
+      if (experiment?.dirname) {
+        const filteredQuery = query(collectionRef, where('dirname', '==', experiment.dirname));
+
+        onSnapshot(filteredQuery, (snapshot) => {
+          snapshot.docChanges().forEach(async (change) => {
+            // Handle document changes here
+            const docData = change.doc.data();
+            if (change.type === 'added') {
+              // Document added
+              log.debug('Document added:', docData.filePath);
+              if (docData.filePath.endsWith('.mcap')) {
+                const sourceUrl = await getDownloadURL(
+                  ref(firebaseInstance!.storage, docData.filePath)
+                );
+                iterablePlayer.addSource(docData.filePath, new McapIterableSource(sourceUrl));
+              }
+            }
+            if (change.type === 'modified') {
+              // Document modified
+              log.debug('Document modified:', docData);
+              if (docData.filePath.endsWith('.mcap')) {
+                const sourceUrl = await getDownloadURL(
+                  ref(firebaseInstance!.storage, docData.filePath)
+                );
+                iterablePlayer.addSource(docData.filePath, new McapIterableSource(sourceUrl));
+              }
+            }
+            if (change.type === 'removed') {
+              // Document removed
+              log.debug('Document removed:', docData);
+            }
+          });
+        });
+      }
+
+      metricsCollector.setProperty('player', experiment.experimentFilepath);
 
       setPlayer(iterablePlayer);
     },

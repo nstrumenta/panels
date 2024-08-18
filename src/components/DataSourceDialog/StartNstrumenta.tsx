@@ -11,7 +11,6 @@ import ExperimentList from '@base/components/ExperimentList';
 import NstrumentaProjectSelect from '@base/components/NstrumentaProjectSelect';
 import Stack from '@base/components/Stack';
 import { useNstrumentaContext } from '@base/context/NstrumentaContext';
-import { usePlayerSelection } from '@base/context/PlayerSelectionContext';
 import { useWorkspaceActions } from '@base/context/WorkspaceContext';
 
 const useStyles = makeStyles()((theme) => ({
@@ -80,7 +79,6 @@ const useStyles = makeStyles()((theme) => ({
 }));
 
 export default function StartNstrumenta(): JSX.Element {
-  const { selectedSource } = usePlayerSelection();
   const { classes } = useStyles();
   const { dataSourceDialogActions } = useWorkspaceActions();
   const openExperiment = useOpenExperiment();
@@ -91,11 +89,11 @@ export default function StartNstrumenta(): JSX.Element {
 
   useEffect(() => {
     // open the experiment from param on a new page load
-    if (setExperimentPath && experimentParam && !selectedSource) {
+    if (setExperimentPath && experimentParam) {
       dataSourceDialogActions.open('nstrumenta');
       openExperiment(experimentParam);
     }
-  }, [openExperiment, setExperimentPath, selectedSource, experimentParam, dataSourceDialogActions]);
+  }, [openExperiment, setExperimentPath, experimentParam, dataSourceDialogActions]);
 
   return (
     <Stack className={classes.grid}>

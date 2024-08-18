@@ -2,7 +2,6 @@
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
-import { isString, pickBy } from 'lodash';
 import { useEffect } from 'react';
 import { useDebounce } from 'use-debounce';
 
@@ -58,16 +57,5 @@ export function useStateToURLSynchronization(): void {
     if (stablePlayerUrlState == undefined) {
       return;
     }
-
-    updateUrl({
-      ds: stablePlayerUrlState.sourceId,
-      dsParams: pickBy(
-        {
-          ...stablePlayerUrlState.parameters,
-          eventId: selectedEventId,
-        },
-        isString
-      ),
-    });
   }, [selectedEventId, stablePlayerUrlState]);
 }

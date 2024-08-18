@@ -32,8 +32,6 @@ const selectStartTime = (ctx: MessagePipelineContext) => ctx.playerState.activeD
 const selectEndTime = (ctx: MessagePipelineContext) => ctx.playerState.activeData?.endTime;
 const selectPlayerName = (ctx: MessagePipelineContext) => ctx.playerState.name;
 const selectPlayerPresence = ({ playerState }: MessagePipelineContext) => playerState.presence;
-const selectPlayerSourceId = ({ playerState }: MessagePipelineContext) =>
-  playerState.urlState?.sourceId;
 
 function DataSourceInfoContent(props: {
   disableSource?: boolean;
@@ -140,7 +138,6 @@ export function DataSourceInfoView({ disableSource }: { disableSource?: boolean 
   const endTime = useMessagePipeline(selectEndTime);
   const playerName = useMessagePipeline(selectPlayerName);
   const playerPresence = useMessagePipeline(selectPlayerPresence);
-  const playerSourceId = useMessagePipeline(selectPlayerSourceId);
   const durationRef = useRef<HTMLDivElement>(null);
   const endTimeRef = useRef<HTMLDivElement>(null);
   const { formatDate, formatTime } = useAppTimeFormat();
@@ -175,7 +172,6 @@ export function DataSourceInfoView({ disableSource }: { disableSource?: boolean 
       endTimeRef={endTimeRef}
       playerName={playerName}
       playerPresence={playerPresence}
-      playerSourceId={playerSourceId}
       startTime={startTime}
     />
   );

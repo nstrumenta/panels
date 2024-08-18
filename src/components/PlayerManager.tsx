@@ -45,8 +45,6 @@ export default function PlayerManager(props: Props): JSX.Element {
 
       const dataCollectionPath = `projects/${projectId}/data`;
 
-      const dataUrl = await getDownloadURL(ref(firebaseInstance!.storage, experiment.dataFilePath));
-
       const iterablePlayer = new IterablePlayer({
         isSampleDataSource: true,
         name: 'nstrumenta',
@@ -55,11 +53,16 @@ export default function PlayerManager(props: Props): JSX.Element {
         urlParams: {},
       });
 
-      iterablePlayer.addSource(experiment.dataFilePath, new McapIterableSource(dataUrl));
-
       const db = getFirestore(firebaseInstance.app);
       const collectionRef = collection(db, dataCollectionPath);
 
+      if (experiment?.dataFilePath) {
+        const dataUrl = await getDownloadURL(
+          ref(firebaseInstance!.storage, experiment.dataFilePath)
+        );
+        iterablePlayer.addSource(experiment.dataFilePath, new McapIterableSource(dataUrl));
+      }
+      
       // watch for files in dirname
       if (experiment?.dirname) {
         const filteredQuery = query(collectionRef, where('dirname', '==', experiment.dirname));

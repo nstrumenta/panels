@@ -38,6 +38,13 @@ export const getBuiltin: () => PanelInfo[] = () => [
     module: async () => await import('./NstrumentaVideo'),
   },
   {
+    title: 'nstrumentaModel',
+    type: 'nstrumentaModel',
+    description: 'rendered model',
+    thumbnail: nstrumentaLogo,
+    module: async () => await import('./NstrumentaModel'),
+  },
+  {
     title: 'image',
     type: 'ImageViewPanel',
     description: 'imageDescription',

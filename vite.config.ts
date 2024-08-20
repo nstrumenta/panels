@@ -6,6 +6,7 @@ import topLevelAwait from 'vite-plugin-top-level-await';
 import wasm from 'vite-plugin-wasm';
 import tsconfigPaths from 'vite-tsconfig-paths';
 import { comlink } from 'vite-plugin-comlink';
+import glsl from 'vite-plugin-glsl';
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -16,6 +17,7 @@ export default defineConfig({
     topLevelAwait(),
     svgr(),
     comlink(),
+    glsl(),
     // {
     //   name: 'log-transformed-modules',
     //   transform(src, id) {

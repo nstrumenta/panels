@@ -50,7 +50,6 @@ import {
 } from './context/CurrentLayoutContext';
 import { EventsStore, useEvents } from './context/EventsContext';
 import { useNstrumentaContext } from './context/NstrumentaContext';
-import { usePlayerSelection } from './context/PlayerSelectionContext';
 import {
   LeftSidebarItemKey,
   RightSidebarItemKey,
@@ -403,8 +402,6 @@ function WorkspaceContent(props: WorkspaceContentProps): JSX.Element {
 }
 
 export default function Workspace(props: WorkspaceProps): JSX.Element {
-  const { selectedSource } = usePlayerSelection();
-
   const openExperiment = useOpenExperiment();
   const { setExperimentPath } = useNstrumentaContext();
   const experimentParam = new URLSearchParams(window.location.search).get('experiment') ?? '';
@@ -415,10 +412,10 @@ export default function Workspace(props: WorkspaceProps): JSX.Element {
 
   useEffect(() => {
     // open the experiment from param on a new page load
-    if (setExperimentPath && experimentParam && !selectedSource) {
+    if (setExperimentPath && experimentParam) {
       openExperiment(experimentParam);
     }
-  }, [openExperiment, setExperimentPath, selectedSource, experimentParam]);
+  }, [openExperiment, setExperimentPath, experimentParam]);
 
   useEffect(() => {
     if (layoutId) {

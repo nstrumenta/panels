@@ -11,7 +11,7 @@
 //   found at http://www.apache.org/licenses/LICENSE-2.0
 //   You may not use this file except in compliance with the License.
 
-import { inWebWorker } from '@base/util/workers';
+import { inWebWorker } from '../../../util/workers';
 import Rpc, { Channel } from '../../../util/Rpc';
 import { setupWorker } from '../../../util/RpcWorkerUtils';
 import { renderImage } from '../lib/renderImage';

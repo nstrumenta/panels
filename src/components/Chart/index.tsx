@@ -26,7 +26,6 @@ import ChartJSWorker from './worker/main.ts?worker';
 const log = Logger.getLogger(__filename);
 
 function makeChartJSWorker() {
-  // foxglove-depcheck-used: babel-plugin-transform-import-meta
   return new ChartJSWorker();
 }
 

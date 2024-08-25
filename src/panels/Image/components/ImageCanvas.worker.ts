@@ -11,12 +11,12 @@
 //   found at http://www.apache.org/licenses/LICENSE-2.0
 //   You may not use this file except in compliance with the License.
 
+import { inWebWorker } from '@base/util/workers';
 import Rpc, { Channel } from '../../../util/Rpc';
 import { setupWorker } from '../../../util/RpcWorkerUtils';
-
 import { renderImage } from '../lib/renderImage';
 import { idColorToIndex } from '../lib/util';
-import type { RenderArgs, RenderDimensions, Annotation } from '../types';
+import type { Annotation, RenderArgs, RenderDimensions } from '../types';
 
 type RenderState = {
   canvas: OffscreenCanvas;
@@ -65,8 +65,6 @@ class ImageCanvasWorker {
 
     rpc.receive(
       'renderImage',
-      // Potentially performance-sensitive; await can be expensive
-
       (args: RenderArgs & { id: string }): Promise<RenderDimensions | undefined> => {
         const { id, geometry, imageMessage, rawMarkerData, options } = args;
 
@@ -100,7 +98,6 @@ class ImageCanvasWorker {
   }
 }
 
-if ((global as unknown as Partial<Channel>).postMessage && !global.onmessage) {
-  // not yet using TS Worker lib: FG-64
-  new ImageCanvasWorker(new Rpc(global as unknown as Channel));
+if (inWebWorker()) {
+  new ImageCanvasWorker(new Rpc(globalThis as unknown as Channel));
 }

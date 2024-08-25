@@ -24,6 +24,8 @@ import { Topic } from '@base/players/types';
 import Rpc from '@base/util/Rpc';
 import WebWorkerManager from '@base/util/WebWorkerManager';
 
+import ImageCanvasWorker from './ImageCanvas.worker?worker';
+
 import ZoomMenu from './ZoomMenu';
 import { renderImage } from '../lib/renderImage';
 import { Config } from '../types';
@@ -88,9 +90,8 @@ const useStyles = makeStyles()((theme) => ({
 }));
 
 const webWorkerManager = new WebWorkerManager(() => {
-  // foxglove-depcheck-used: babel-plugin-transform-import-meta
-  return new Worker(new URL('ImageCanvas.worker', import.meta.url));
-}, 1);
+  return new ImageCanvasWorker();
+},1);
 
 type RenderImage = (
   args: RenderArgs & { canvas: RenderableCanvas }
@@ -151,12 +152,9 @@ export function ImageCanvas(props: Props): JSX.Element {
     const id = workerId;
 
     if (renderInMainThread) {
-      // Potentially performance-sensitive; await can be expensive
-
       const renderInMain: RenderImage = (args) => {
         const targetWidth = args.geometry.viewport.width;
         const targetHeight = args.geometry.viewport.height;
-
         if (targetWidth !== newCanvas.width) {
           newCanvas.width = targetWidth;
         }
@@ -165,17 +163,12 @@ export function ImageCanvas(props: Props): JSX.Element {
         }
         return renderImage({ ...args, hitmapCanvas: undefined });
       };
-
       setDoRenderImage(() => renderInMain);
     } else {
       const worker = webWorkerManager.registerWorkerListener(id);
       workerRef.current = worker;
-
-      // Potentially performance-sensitive; await can be expensive
-
       const workerRender: RenderImage = (args) => {
         const { geometry, imageMessage, options, rawMarkerData: rawMarkers } = args;
-
         return worker.send<Dimensions | undefined, RenderArgs & { id: string }>('renderImage', {
           geometry,
           id,
@@ -184,9 +177,7 @@ export function ImageCanvas(props: Props): JSX.Element {
           rawMarkerData: rawMarkers,
         });
       };
-
       const transferredCanvas = newCanvas.transferControlToOffscreen();
-
       worker
         .send<void>('initialize', { id, canvas: transferredCanvas }, [transferredCanvas])
         .then(() => {
@@ -201,14 +192,12 @@ export function ImageCanvas(props: Props): JSX.Element {
           }
         });
     }
-
     return () => {
       mounted = false;
       newCanvas.remove();
       if (renderInMainThread) {
         return;
       }
-
       workerRef.current = undefined;
       webWorkerManager.unregisterWorkerListener(id);
     };

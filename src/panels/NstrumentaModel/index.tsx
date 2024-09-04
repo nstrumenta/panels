@@ -14,38 +14,39 @@
 import Panel from '@base/components/Panel';
 import PanelToolbar from '@base/components/PanelToolbar';
 import Stack from '@base/components/Stack';
-import { useState, useRef, useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import GameScene from './GameScene';
 
 function NstrumentaModelPanel(): JSX.Element {
-  const [scene, setScene] = useState<GameScene>();
-  const [scroll, setScroll] = useState(0);
-  const renderTarget = useRef<HTMLCanvasElement>(null);
+  const canvasContainerRef = useRef<HTMLDivElement>(null);
+  const renderTargetRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
-    if (renderTarget.current) {
-      const scene = new GameScene(renderTarget.current);
-      scene.setSize(window.innerWidth, window.innerHeight);
-      setScene(scene);
+    if (canvasContainerRef.current && renderTargetRef.current) {
+      const scene = new GameScene(renderTargetRef.current);
+      scene.setSize(renderTargetRef.current.clientWidth, renderTargetRef.current.clientHeight);
+
+      const resizeObserver = new ResizeObserver(() => {
+        scene.setSize(
+          canvasContainerRef.current!.clientWidth,
+          canvasContainerRef.current!.clientHeight
+        );
+      });
+
+      resizeObserver.observe(canvasContainerRef.current);
+
+      return () => {
+        resizeObserver.disconnect();
+      };
     }
-  }, [renderTarget]);
-
-  useEffect(() => {
-    scene?.setScroll(scroll);
-  }, [scene, scroll]);
-
-  window.addEventListener("resize", (_event) => {
-    scene?.setSize(window.innerWidth, window.innerHeight);
-  });
-
-  window.addEventListener("wheel", (event) => {
-    setScroll(event.deltaY + scroll);
-  });
+  }, [renderTargetRef, canvasContainerRef]);
 
   return (
     <Stack fullHeight>
       <PanelToolbar />
-      <canvas ref={renderTarget} />
+      <div ref={canvasContainerRef} style={{ height: '100%', width: '100%' }}>
+        <canvas ref={renderTargetRef} />
+      </div>
     </Stack>
   );
 }

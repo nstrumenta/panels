@@ -1,61 +1,56 @@
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
-//
-// This file incorporates work covered by the following copyright and
-// permission notice:
-//
-//   Copyright 2019-2021 Cruise LLC
-//
-//   This source code is licensed under the Apache License, Version 2.0,
-//   found at http://www.apache.org/licenses/LICENSE-2.0
-//   You may not use this file except in compliance with the License.
 
+import { StrictMode, useMemo } from 'react';
+import ReactDOM from 'react-dom';
+
+import { useCrash } from '@foxglove/hooks';
+import { PanelExtensionContext } from '@foxglove/studio';
+import { CaptureErrorBoundary } from '@base/components/CaptureErrorBoundary';
 import Panel from '@base/components/Panel';
-import PanelToolbar from '@base/components/PanelToolbar';
-import Stack from '@base/components/Stack';
-import { useEffect, useRef } from 'react';
-import GameScene from './GameScene';
+import { PanelExtensionAdapter } from '@base/components/PanelExtensionAdapter';
+import ThemeProvider from '@base/theme/ThemeProvider';
+import { SaveConfig } from '@base/types/panels';
 
-function NstrumentaModelPanel(): JSX.Element {
-  const canvasContainerRef = useRef<HTMLDivElement>(null);
-  const renderTargetRef = useRef<HTMLCanvasElement>(null);
+import { Model } from './Model';
+import { Config } from './types';
 
-  useEffect(() => {
-    if (canvasContainerRef.current && renderTargetRef.current) {
-      const scene = new GameScene(renderTargetRef.current);
-      scene.setSize(renderTargetRef.current.clientWidth, renderTargetRef.current.clientHeight);
+function initPanel(crash: ReturnType<typeof useCrash>, context: PanelExtensionContext) {
+  ReactDOM.render(
+    <StrictMode>
+      <CaptureErrorBoundary onError={crash}>
+        <ThemeProvider isDark>
+          <Model context={context} />
+        </ThemeProvider>
+      </CaptureErrorBoundary>
+    </StrictMode>,
+    context.panelElement
+  );
+  return () => {
+    ReactDOM.unmountComponentAtNode(context.panelElement);
+  };
+}
 
-      const resizeObserver = new ResizeObserver(() => {
-        scene.setSize(
-          canvasContainerRef.current!.clientWidth,
-          canvasContainerRef.current!.clientHeight
-        );
-      });
+type Props = {
+  config: Config;
+  saveConfig: SaveConfig<Config>;
+};
 
-      resizeObserver.observe(canvasContainerRef.current);
-
-      return () => {
-        resizeObserver.disconnect();
-      };
-    }
-  }, [renderTargetRef, canvasContainerRef]);
+function NstrumentaModelPanelAdapter(props: Props) {
+  const crash = useCrash();
+  const boundInitPanel = useMemo(() => initPanel.bind(undefined, crash), [crash]);
 
   return (
-    <Stack fullHeight>
-      <PanelToolbar />
-      <div ref={canvasContainerRef} style={{ height: '100%', width: '100%' }}>
-        <canvas ref={renderTargetRef} />
-      </div>
-    </Stack>
+    <PanelExtensionAdapter
+      config={props.config}
+      saveConfig={props.saveConfig}
+      initPanel={boundInitPanel}
+    />
   );
 }
 
-const defaultConfig: Record<string, unknown> = {};
+NstrumentaModelPanelAdapter.panelType = 'Indicator';
+NstrumentaModelPanelAdapter.defaultConfig = {};
 
-export default Panel(
-  Object.assign(NstrumentaModelPanel, {
-    panelType: 'nstrumentaModel',
-    defaultConfig,
-  })
-);
+export default Panel(NstrumentaModelPanelAdapter);

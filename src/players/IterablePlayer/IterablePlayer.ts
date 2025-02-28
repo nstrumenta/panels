@@ -265,14 +265,31 @@ export class IterablePlayer implements Player {
 
   public setSubscriptions(newSubscriptions: SubscribePayload[]): void {
     log.debug('set subscriptions', newSubscriptions);
-    this._subscriptions = newSubscriptions;
-    this._metricsCollector.setSubscriptions(newSubscriptions);
+
+    // Filter out missing topics
+    const availableTopics = new Set(
+      Array.from(this._playerSources.values()).flatMap((source) =>
+        source.initialization?.topics.map((topic) => topic.name) ?? []
+      )
+    );
+
+    const filteredSubscriptions = newSubscriptions.filter((sub) => {
+      if (!availableTopics.has(sub.topic)) {
+        log.warn(`Topic ${sub.topic} is not available`);
+        return false;
+      }
+      return true;
+    });
+
+    this._subscriptions = filteredSubscriptions;
+    this._metricsCollector.setSubscriptions(filteredSubscriptions);
 
     const preloadTopics = new Set(
       filterMap(this._subscriptions, (sub) =>
         sub.preloadType !== 'partial' ? sub.topic : undefined
       )
     );
+
     for (const source of this._playerSources.values()) {
       const matchingTopics = source.initialization?.topics.filter((topic) =>
         preloadTopics.has(topic.name)
@@ -282,8 +299,14 @@ export class IterablePlayer implements Player {
       }
     }
 
+    // If there are no valid subscriptions, do not trigger seek-backfill
+    if (this._subscriptions.length === 0) {
+      log.warn('No valid subscriptions, skipping seek-backfill');
+      return;
+    }
+
     // If the player is playing, the playing state will detect any subscription changes and adjust
-    // iterators accordignly. However if we are idle or already seeking then we need to manually
+    // iterators accordingly. However, if we are idle or already seeking, then we need to manually
     // trigger the backfill.
     if (this._state === 'idle' || this._state === 'seek-backfill' || this._state === 'play') {
       if (!this._isPlaying && this._currentTime) {
@@ -628,14 +651,14 @@ export class IterablePlayer implements Player {
     if (!this._start || !this._end) {
       throw new Error('invariant: stateSeekBackfill prior to initialization');
     }
-
+  
     if (!this._seekTarget) {
       return;
     }
-
+  
     // Ensure the seek time is always within the data source bounds
     const targetTime = clampTime(this._seekTarget, this._start, this._end);
-
+  
     // If the backfill does not complete within 100 milliseconds, we emit with no messages to
     // indicate buffering. This provides feedback to the user that we've acknowledged their seek
     // request but haven't loaded the data.
@@ -647,7 +670,7 @@ export class IterablePlayer implements Player {
       this._currentTime = targetTime;
       this._queueEmitState();
     }, 100);
-
+  
     try {
       const allMessages = await Promise.all(
         Array.from(this._playerSources.entries()).map(([_key, source]) => {
@@ -660,30 +683,29 @@ export class IterablePlayer implements Player {
           });
         })
       );
-
+  
       // Merge all arrays of messages into a single array
       const messages = allMessages.flat();
-
+  
       // We've successfully loaded the messages and will emit those, no longer need the ackTimeout
       clearTimeout(seekAckTimeout);
-
+  
       if (this._nextState) {
         return;
       }
-
+  
       this._messages = messages;
       this._currentTime = targetTime;
       this._lastSeekEmitTime = Date.now();
       this._presence = PlayerPresence.PRESENT;
       this._queueEmitState();
-      // TODO: if this is present, the second source doesn't render in the plot
-      // await this.resetPlaybackIterator();
       this._setState(this._isPlaying ? 'play' : 'idle');
     } catch (err) {
       if (this._nextState && err instanceof DOMException && err.name === 'AbortError') {
         log.debug('Aborted backfill');
       } else {
-        throw err;
+        this._setError(`Error during seek-backfill: ${(err as Error).message}`, err);
+        this._queueEmitState();
       }
     } finally {
       console.log('seekBackfill finally nextState=', this._nextState);

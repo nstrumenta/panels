@@ -18,13 +18,10 @@ import {
 import { MosaicNode, MosaicWithoutDragDropContext } from 'react-mosaic-component';
 import { makeStyles } from 'tss-react/mui';
 
-import { AppSetting } from '@base/AppSetting';
 import { BuiltinIcon } from '@base/components/BuiltinIcon';
 import ErrorBoundary from '@base/components/ErrorBoundary';
 import { MemoryUseIndicator } from '@base/components/MemoryUseIndicator';
 import Stack from '@base/components/Stack';
-import { useAppConfigurationValue } from '@base/hooks';
-import isDesktopApp from '@base/util/isDesktopApp';
 
 import {
   APP_BAR_BACKGROUND_COLOR,
@@ -171,9 +168,6 @@ export default function Sidebars<
     bottomItems,
     selectedKey,
     onSelectKey,
-    leftItems,
-    selectedLeftKey,
-    onSelectLeftKey,
     leftSidebarSize,
     setLeftSidebarSize,
     rightItems,

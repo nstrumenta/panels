@@ -2,7 +2,6 @@ import react from '@vitejs/plugin-react-swc';
 import path from 'path';
 import { defineConfig } from 'vite';
 import svgr from 'vite-plugin-svgr';
-import topLevelAwait from 'vite-plugin-top-level-await';
 import wasm from 'vite-plugin-wasm';
 import tsconfigPaths from 'vite-tsconfig-paths';
 import { comlink } from 'vite-plugin-comlink';
@@ -14,7 +13,6 @@ export default defineConfig({
     react({ tsDecorators: true }),
     tsconfigPaths(),
     wasm(),
-    topLevelAwait(),
     svgr(),
     comlink(),
     glsl(),
@@ -28,12 +26,13 @@ export default defineConfig({
   ],
   base: '',
   build: {
+    target: ['esnext', 'chrome89', 'firefox89', 'safari15'],
     sourcemap: 'inline',
     minify: true,
     chunkSizeWarningLimit: 5000,
   },
   worker: {
-    plugins: () => [wasm(), topLevelAwait(), comlink()],
+    plugins: () => [wasm(), comlink()],
     format: 'es',
   },
   define: {

@@ -34,11 +34,9 @@ import PanelLayout from './components/PanelLayout';
 import PanelList from './components/PanelList';
 import PanelSettings from './components/PanelSettings';
 import PlaybackControls from './components/PlaybackControls';
-import RemountOnValueChange from './components/RemountOnValueChange';
 import { SidebarContent } from './components/SidebarContent';
 import Sidebars, { SidebarItem } from './components/Sidebars';
 import { NewSidebarItem } from './components/Sidebars/NewSidebar';
-import Stack from './components/Stack';
 import { StudioLogsSettings, StudioLogsSettingsSidebar } from './components/StudioLogsSettings';
 import { SyncAdapters } from './components/SyncAdapters';
 import VariablesList from './components/VariablesList';
@@ -136,7 +134,6 @@ const selectPause = (ctx: MessagePipelineContext) => ctx.pausePlayback;
 const selectPlay = (ctx: MessagePipelineContext) => ctx.startPlayback;
 const selectSeek = (ctx: MessagePipelineContext) => ctx.seekPlayback;
 const selectPlayUntil = (ctx: MessagePipelineContext) => ctx.playUntil;
-const selectPlayerId = (ctx: MessagePipelineContext) => ctx.playerState.playerId;
 const selectEventsSupported = (store: EventsStore) => store.eventsSupported;
 
 const selectWorkspaceDataSourceDialog = (store: WorkspaceContextStore) => store.dataSourceDialog;
@@ -174,10 +171,6 @@ function WorkspaceContent(props: WorkspaceContentProps): JSX.Element {
     setRightSidebarOpen,
     setRightSidebarSize,
   } = useWorkspaceActions();
-
-  // We use playerId to detect when a player changes for RemountOnValueChange below
-  // see comment below above the RemountOnValueChange component
-  const playerId = useMessagePipeline(selectPlayerId);
 
   useDefaultWebLaunchPreference();
 

@@ -22,7 +22,6 @@ import { makeStyles } from 'tss-react/mui';
 import { PanelExtensionContext, SettingsTreeAction, Subscription, Topic } from '@foxglove/studio';
 import { PanelContextMenu, PanelContextMenuItem } from '@base/components/PanelContextMenu';
 import Stack from '@base/components/Stack';
-import inScreenshotTests from '@base/stories/inScreenshotTests';
 import ThemeProvider from '@base/theme/ThemeProvider';
 import { CameraInfo } from '@base/types/Messages';
 import { mightActuallyBePartial } from '@base/util/mightActuallyBePartial';
@@ -94,7 +93,7 @@ const useStyles = makeStyles<void, 'timestamp'>()((theme, _params, classes) => (
 }));
 
 export function ImageView({ context }: Props): JSX.Element {
-  const { classes, cx } = useStyles();
+  const { classes } = useStyles();
   const [renderDone, setRenderDone] = useState(() => () => {});
   const [topics, setTopics] = useState<readonly Topic[]>([]);
   const [config, setConfig] = useState<Config>(() => {
@@ -388,16 +387,7 @@ export function ImageView({ context }: Props): JSX.Element {
 
   return (
     <ThemeProvider isDark={colorScheme === 'dark'}>
-      <Stack
-        flex="auto"
-        overflow="hidden"
-        fullWidth
-        fullHeight
-        position="relative"
-        className={cx(classes.root, {
-          [classes.screenshotTest]: inScreenshotTests(),
-        })}
-      >
+      <Stack flex="auto" overflow="hidden" fullWidth fullHeight position="relative">
         <PanelContextMenu itemsForClickPosition={contextMenuItemsForClickPosition} />
         <Stack fullWidth fullHeight>
           {/* Always render the ImageCanvas because it's expensive to unmount and start up. */}

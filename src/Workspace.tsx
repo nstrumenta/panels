@@ -376,12 +376,7 @@ function WorkspaceContent(props: WorkspaceContentProps): JSX.Element {
           rightSidebarSize={rightSidebarSize}
           setRightSidebarSize={setRightSidebarSize}
         >
-          {/* To ensure no stale player state remains, we unmount all panels when players change */}
-          <RemountOnValueChange value={playerId}>
-            <Stack>
-              <PanelLayout />
-            </Stack>
-          </RemountOnValueChange>
+          <PanelLayout />
         </Sidebars>
         {play && pause && seek && (
           <div style={{ flexShrink: 0 }}>

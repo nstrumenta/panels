@@ -182,16 +182,6 @@ export default function Sidebars<
     rightSidebarSize,
     setRightSidebarSize,
   } = props;
-  const [enableMemoryUseIndicator = false] = useAppConfigurationValue<boolean>(
-    AppSetting.ENABLE_MEMORY_USE_INDICATOR
-  );
-  // Since we can't toggle the title bar on an electron window, keep the setting at its initial
-  // value until the app is reloaded/relaunched.
-  const [currentEnableNewTopNav = false] = useAppConfigurationValue<boolean>(
-    AppSetting.ENABLE_NEW_TOPNAV
-  );
-  const [initialEnableNewTopNav] = useState(currentEnableNewTopNav);
-  const enableNewTopNav = isDesktopApp() ? initialEnableNewTopNav : currentEnableNewTopNav;
 
   const [mosaicValue, setMosaicValue] = useState<MosaicNode<LayoutNode>>('children');
   const { classes } = useStyles();
@@ -200,34 +190,16 @@ export default function Sidebars<
     return new Map([...items, ...bottomItems]);
   }, [bottomItems, items]);
 
-  const oldLeftSidebarOpen = !enableNewTopNav
-    ? selectedKey != undefined && allOldLeftItems.has(selectedKey)
-    : false;
-  const leftSidebarOpen =
-    enableNewTopNav && selectedLeftKey != undefined && leftItems.has(selectedLeftKey);
-  const rightSidebarOpen =
-    enableNewTopNav && selectedRightKey != undefined && rightItems.has(selectedRightKey);
+  const oldLeftSidebarOpen = selectedKey != undefined && allOldLeftItems.has(selectedKey);
 
   useEffect(() => {
-    const leftTargetWidth = enableNewTopNav ? 320 : 384;
-    const rightTargetWidth = 320;
+    const leftTargetWidth = 384;
     const defaultLeftPercentage = 100 * (leftTargetWidth / window.innerWidth);
-    const defaultRightPercentage = 100 * (1 - rightTargetWidth / window.innerWidth);
 
     setMosaicValue((oldValue) => {
       let node: MosaicNode<LayoutNode> = 'children';
-      if (rightSidebarOpen) {
-        node = {
-          direction: 'row',
-          first: node,
-          second: 'rightbar',
-          splitPercentage:
-            rightSidebarSize ??
-            mosiacRightSidebarSplitPercentage(oldValue) ??
-            defaultRightPercentage,
-        };
-      }
-      if (oldLeftSidebarOpen || leftSidebarOpen) {
+
+      if (oldLeftSidebarOpen) {
         node = {
           direction: 'row',
           first: 'leftbar',
@@ -238,14 +210,7 @@ export default function Sidebars<
       }
       return node;
     });
-  }, [
-    enableNewTopNav,
-    leftSidebarSize,
-    oldLeftSidebarOpen,
-    rightSidebarSize,
-    leftSidebarOpen,
-    rightSidebarOpen,
-  ]);
+  }, [leftSidebarSize, oldLeftSidebarOpen, rightSidebarSize]);
 
   const SelectedLeftComponent =
     (selectedKey != undefined && allOldLeftItems.get(selectedKey)?.component) || Noop;
@@ -330,7 +295,7 @@ export default function Sidebars<
 
   return (
     <Stack direction="row" fullHeight overflow="hidden">
-      {!enableNewTopNav && (
+      {
         <Stack className={classes.leftNav} flexShrink={0} justifyContent="space-between">
           <Tabs
             className={classes.tabs}
@@ -341,7 +306,7 @@ export default function Sidebars<
           >
             {topTabs}
             <TabSpacer />
-            {enableMemoryUseIndicator && <MemoryUseIndicator />}
+            <MemoryUseIndicator />
             {bottomTabs}
             {!currentUser && (
               <Button
@@ -376,7 +341,7 @@ export default function Sidebars<
             </IconButton>
           </Tabs>
         </Stack>
-      )}
+      }
       {
         // By always rendering the mosaic, even if we are only showing children, we can prevent the
         // children from having to re-mount each time the sidebar is opened/closed.
@@ -393,19 +358,9 @@ export default function Sidebars<
               case 'leftbar':
                 return (
                   <ErrorBoundary>
-                    {enableNewTopNav ? (
-                      <NewSidebar<LeftKey>
-                        anchor="left"
-                        onClose={() => onSelectLeftKey(undefined)}
-                        items={leftItems}
-                        activeTab={selectedLeftKey}
-                        setActiveTab={onSelectLeftKey}
-                      />
-                    ) : (
-                      <Paper square elevation={0}>
-                        <SelectedLeftComponent />
-                      </Paper>
-                    )}
+                    <Paper square elevation={0}>
+                      <SelectedLeftComponent />
+                    </Paper>
                   </ErrorBoundary>
                 );
               case 'rightbar':

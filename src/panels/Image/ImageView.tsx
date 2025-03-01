@@ -13,13 +13,12 @@
 
 import { Typography } from '@mui/material';
 import produce from 'immer';
-import { difference, keyBy, set, union } from 'lodash';
-import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
+import { difference, isEqual, keyBy, set, union } from 'lodash';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import ReactDOM from 'react-dom';
 import { DeepPartial } from 'ts-essentials';
 import { makeStyles } from 'tss-react/mui';
 
-import { PanelExtensionContext, SettingsTreeAction, Subscription, Topic } from '@foxglove/studio';
 import { PanelContextMenu, PanelContextMenuItem } from '@base/components/PanelContextMenu';
 import Stack from '@base/components/Stack';
 import ThemeProvider from '@base/theme/ThemeProvider';
@@ -27,6 +26,7 @@ import { CameraInfo } from '@base/types/Messages';
 import { mightActuallyBePartial } from '@base/util/mightActuallyBePartial';
 import { fonts } from '@base/util/sharedStyleConstants';
 import { formatTimeRaw } from '@base/util/time';
+import { PanelExtensionContext, SettingsTreeAction, Subscription, Topic } from '@foxglove/studio';
 
 import { ImageCanvas, ImageEmptyState, Toolbar } from './components';
 import { useImagePanelMessages } from './hooks';
@@ -34,7 +34,7 @@ import { CALIBRATION_DATATYPES } from './hooks/normalizeCameraInfo';
 import { downloadImage } from './lib/downloadImage';
 import { ANNOTATION_DATATYPES } from './lib/normalizeAnnotations';
 import { NORMALIZABLE_IMAGE_DATATYPES } from './lib/normalizeMessage';
-import { getRelatedMarkerTopics, getMarkerOptions, getCameraInfoTopic } from './lib/util';
+import { getCameraInfoTopic, getMarkerOptions, getRelatedMarkerTopics } from './lib/util';
 import { buildSettingsTree } from './settings';
 import type { Config, PixelData, RawMarkerData } from './types';
 
@@ -177,8 +177,15 @@ export function ImageView({ context }: Props): JSX.Element {
     context.watch('currentFrame');
     context.watch('colorScheme');
   }, [context]);
+
+  const prevSubscriptionsRef = useRef<Subscription[]>(subscriptions);
+
   useEffect(() => {
-    context.subscribe(subscriptions);
+    // if subscriptions change, we need to resubscribe
+    if (!isEqual(prevSubscriptionsRef.current, subscriptions)) {
+      context.subscribe(subscriptions);
+      prevSubscriptionsRef.current = subscriptions;
+    }
   }, [context, subscriptions]);
 
   const { image, annotations, cameraInfo, actions } = useImagePanelMessages({

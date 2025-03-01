@@ -264,12 +264,20 @@ export class IterablePlayer implements Player {
   }
 
   public setSubscriptions(newSubscriptions: SubscribePayload[]): void {
-    log.debug('set subscriptions', newSubscriptions);
+    //if the subscriptions are the same, do nothing
+    if (
+      this._subscriptions.length === newSubscriptions.length &&
+      this._subscriptions.every((sub, i) => sub.topic === newSubscriptions[i].topic)
+    ) {
+      log.debug('identical subscriptions', newSubscriptions);
+      return;
+    }
+    log.debug('setting new subscriptions', newSubscriptions);
 
     // Filter out missing topics
     const availableTopics = new Set(
-      Array.from(this._playerSources.values()).flatMap((source) =>
-        source.initialization?.topics.map((topic) => topic.name) ?? []
+      Array.from(this._playerSources.values()).flatMap(
+        (source) => source.initialization?.topics.map((topic) => topic.name) ?? []
       )
     );
 
@@ -651,14 +659,14 @@ export class IterablePlayer implements Player {
     if (!this._start || !this._end) {
       throw new Error('invariant: stateSeekBackfill prior to initialization');
     }
-  
+
     if (!this._seekTarget) {
       return;
     }
-  
+
     // Ensure the seek time is always within the data source bounds
     const targetTime = clampTime(this._seekTarget, this._start, this._end);
-  
+
     // If the backfill does not complete within 100 milliseconds, we emit with no messages to
     // indicate buffering. This provides feedback to the user that we've acknowledged their seek
     // request but haven't loaded the data.
@@ -670,7 +678,7 @@ export class IterablePlayer implements Player {
       this._currentTime = targetTime;
       this._queueEmitState();
     }, 100);
-  
+
     try {
       const allMessages = await Promise.all(
         Array.from(this._playerSources.entries()).map(([_key, source]) => {
@@ -683,17 +691,17 @@ export class IterablePlayer implements Player {
           });
         })
       );
-  
+
       // Merge all arrays of messages into a single array
       const messages = allMessages.flat();
-  
+
       // We've successfully loaded the messages and will emit those, no longer need the ackTimeout
       clearTimeout(seekAckTimeout);
-  
+
       if (this._nextState) {
         return;
       }
-  
+
       this._messages = messages;
       this._currentTime = targetTime;
       this._lastSeekEmitTime = Date.now();

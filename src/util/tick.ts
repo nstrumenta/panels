@@ -12,5 +12,5 @@
 //   You may not use this file except in compliance with the License.
 
 export default async function tick(): Promise<void> {
-  return await new Promise((resolve) => setImmediate(resolve));
+  return await new Promise((resolve) => setTimeout(resolve, 0));
 }

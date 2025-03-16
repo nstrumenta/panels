@@ -11,6 +11,7 @@
 //   found at http://www.apache.org/licenses/LICENSE-2.0
 //   You may not use this file except in compliance with the License.
 
+import setImmediate from '@base/util/setImmediate';
 import CloseIcon from '@mui/icons-material/Close';
 import { IconButton, InputBase } from '@mui/material';
 import React, { Ref as ReactRef, useCallback, useEffect, useMemo, useRef, useState } from 'react';

@@ -15,6 +15,7 @@ import React from 'react';
 import { Stack } from '@mui/material';
 import { flatten, flatMap, partition } from 'lodash';
 import { CSSProperties, useCallback, useMemo } from 'react';
+import setImmediate from '@base/util/setImmediate';
 
 import { MessageDefinitionField } from '@foxglove/message-definition';
 import * as PanelAPI from '@base/PanelAPI';

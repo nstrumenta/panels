@@ -16,15 +16,10 @@ const useMustNotChangeImpl = (value: unknown): void => {
   valueRef.current = value;
 };
 
-const noOpImpl = () => {};
-
 /**
  * useMustNotChange throws if the value provided as the first argument ever changes.
- *
- * Note: In production builds this hook is a no-op.
- *
  */
-const useMustNotChange = process.env.NODE_ENV !== 'development' ? noOpImpl : useMustNotChangeImpl;
+const useMustNotChange = useMustNotChangeImpl;
 
 export default useMustNotChange;
 

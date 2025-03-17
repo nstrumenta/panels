@@ -82,13 +82,11 @@ function useFeatures(): Feature[] {
     });
   }
 
-  if (process.env.NODE_ENV === 'development') {
-    features.push({
-      key: AppSetting.ENABLE_LAYOUT_DEBUGGING,
-      name: 'layoutDebugging',
-      description: <>{'layoutDebuggingDescription'}</>,
-    });
-  }
+  features.push({
+    key: AppSetting.ENABLE_LAYOUT_DEBUGGING,
+    name: 'layoutDebugging',
+    description: <>{'layoutDebuggingDescription'}</>,
+  });
 
   return features;
 }

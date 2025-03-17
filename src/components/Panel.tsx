@@ -648,7 +648,7 @@ export default function Panel<
                 <PanelErrorBoundary onRemovePanel={removePanel} onResetPanel={resetPanel}>
                   <React.StrictMode>{child}</React.StrictMode>
                 </PanelErrorBoundary>
-                {process.env.NODE_ENV !== 'production' && <PerfInfo ref={perfInfo} />}
+                <PerfInfo ref={perfInfo} />
               </PanelRoot>
             )}
           </Transition>

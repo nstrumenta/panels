@@ -40,12 +40,7 @@ function activateExtension(
     return { react: React, 'react-dom': ReactDOM }[name];
   };
 
-  const extensionMode =
-    process.env.NODE_ENV === 'production'
-      ? 'production'
-      : process.env.NODE_ENV === 'test'
-      ? 'test'
-      : 'development';
+  const extensionMode = 'development';
 
   const ctx: ExtensionContext = {
     mode: extensionMode,

@@ -13,21 +13,18 @@ const log = Log.getLogger('useWarnImmediateReRender');
 //
 // Note: This detects state change triggers in useLayoutEffect. It does not detect state changes from
 // useEffect which run on the next animation frame.
-const useWarnImmediateReRender =
-  process.env.NODE_ENV !== 'development'
-    ? () => {}
-    : () => {
-        const renderedRef = useRef(false);
-        useLayoutEffect(() => {
-          if (renderedRef.current) {
-            log.warn('Component re-rendered immediately');
-          }
-          renderedRef.current = true;
-          const raf = requestAnimationFrame(() => {
-            renderedRef.current = false;
-          });
-          return () => cancelAnimationFrame(raf);
-        });
-      };
+const useWarnImmediateReRender = () => {
+  const renderedRef = useRef(false);
+  useLayoutEffect(() => {
+    if (renderedRef.current) {
+      log.warn('Component re-rendered immediately');
+    }
+    renderedRef.current = true;
+    const raf = requestAnimationFrame(() => {
+      renderedRef.current = false;
+    });
+    return () => cancelAnimationFrame(raf);
+  });
+};
 
 export default useWarnImmediateReRender;

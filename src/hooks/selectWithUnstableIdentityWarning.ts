@@ -7,12 +7,11 @@ const log = Log.getLogger('selectWithUnstableIdentityWarning');
 
 export function selectWithUnstableIdentityWarning<T, U>(value: T, selector: (value: T) => U): U {
   const result = selector(value);
-  if (process.env.NODE_ENV === 'development') {
-    const secondResult = selector(value);
-    if (result !== secondResult) {
-      log.warn(`Selector ${selector.toString()} produced different values for the same input.
+  const secondResult = selector(value);
+  if (result !== secondResult) {
+    log.warn(`Selector ${selector.toString()} produced different values for the same input.
   This will cause unecesessery re-renders of your component.`);
-    }
+
     return secondResult;
   }
   return result;

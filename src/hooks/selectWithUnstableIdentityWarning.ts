@@ -3,7 +3,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 import Log from '@foxglove/log';
 
-const log = Log.getLogger(__filename);
+const log = Log.getLogger('selectWithUnstableIdentityWarning');
 
 export function selectWithUnstableIdentityWarning<T, U>(value: T, selector: (value: T) => U): U {
   const result = selector(value);

@@ -25,7 +25,7 @@ import {
   SubscriptionPreloadType,
 } from '@base/players/types';
 
-const log = Log.getLogger(__filename);
+const log = Log.getLogger('useMessageReducer');
 
 type MessageReducer<T> = (arg0: T, message: MessageEvent<unknown>) => T;
 type MessagesReducer<T> = (arg0: T, messages: readonly MessageEvent<unknown>[]) => T;

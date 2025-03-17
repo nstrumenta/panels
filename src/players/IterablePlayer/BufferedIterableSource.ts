@@ -18,7 +18,7 @@ import {
   MessageIteratorArgs,
 } from './IIterableSource';
 
-const log = Log.getLogger(__filename);
+const log = Log.getLogger('BufferedIterableSource');
 
 const DEFAULT_READ_AHEAD_DURATION = { sec: 10, nsec: 0 };
 

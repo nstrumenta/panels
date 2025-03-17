@@ -23,7 +23,7 @@ import { MessageBlock, Progress } from '@base/players/types';
 
 import { IIterableSource, MessageIteratorArgs } from './IIterableSource';
 
-const log = Log.getLogger(__filename);
+const log = Log.getLogger('BlockLoader');
 
 type BlockLoaderArgs = {
   cacheSizeBytes: number;

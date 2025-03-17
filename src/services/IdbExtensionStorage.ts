@@ -8,7 +8,7 @@ import Log from '@foxglove/log';
 import { IExtensionStorage, StoredExtension } from '@base/services/IExtensionStorage';
 import { ExtensionInfo } from '@base/types/Extensions';
 
-const log = Log.getLogger(__filename);
+const log = Log.getLogger('IdbExtensionStorage');
 
 const DATABASE_BASE_NAME = 'foxglove-extensions';
 const METADATA_STORE_NAME = 'metadata';

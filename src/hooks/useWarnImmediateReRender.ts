@@ -5,7 +5,7 @@ import { useLayoutEffect, useRef } from 'react';
 
 import Log from '@foxglove/log';
 
-const log = Log.getLogger(__filename);
+const log = Log.getLogger('useWarnImmediateReRender');
 
 // useWarnImmediateReRender will warn if the component re-renders before the next animation frame
 // This typically indicates that the component state is changing in rapid succession and more

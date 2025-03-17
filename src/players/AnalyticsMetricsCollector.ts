@@ -7,7 +7,7 @@ import { Time } from '@foxglove/rostime';
 import { PlayerMetricsCollectorInterface, SubscribePayload } from '@base/players/types';
 import IAnalytics, { AppEvent } from '@base/services/IAnalytics';
 
-const log = Log.getLogger(__filename);
+const log = Log.getLogger('AnalyticsMetricsCollector');
 
 type EventData = { [key: string]: string | number | boolean };
 

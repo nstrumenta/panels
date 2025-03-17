@@ -8,7 +8,7 @@ import Log, { toLogLevel } from '@foxglove/log';
 import { SettingsTree, SettingsTreeNode, SettingsTreeNodes } from '@foxglove/studio';
 import { useStudioLogsSettings } from '@base/context/StudioLogsSettingsContext';
 
-const log = Log.getLogger(__filename);
+const log = Log.getLogger('useStudioLogsSettingsTree');
 
 type ItemDetail = {
   type: 'prefix' | 'channel';

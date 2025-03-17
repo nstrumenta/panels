@@ -25,7 +25,7 @@ import Logger from '@foxglove/log';
 import { collection, getFirestore, onSnapshot, query, where } from 'firebase/firestore';
 import { getDownloadURL, ref } from 'firebase/storage';
 
-const log = Logger.getLogger(__filename);
+const log = Logger.getLogger('PlayerManager');
 
 type Props = {
   children: React.ReactNode;

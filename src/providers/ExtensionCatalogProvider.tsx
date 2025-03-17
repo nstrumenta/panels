@@ -16,7 +16,7 @@ import {
 import { ExtensionLoader } from '@base/services/ExtensionLoader';
 import { ExtensionInfo, ExtensionNamespace } from '@base/types/Extensions';
 
-const log = Logger.getLogger(__filename);
+const log = Logger.getLogger('ExtensionCatalogProvider');
 
 type ContributionPoints = {
   panels: Record<string, RegisteredPanel>;

@@ -44,7 +44,7 @@ import { PanelConfig, UserNodes, PlaybackConfig } from '@base/types/panels';
 import { windowAppURLState } from '@base/util/appURLState';
 import { getPanelTypeFromId } from '@base/util/layout';
 
-const log = Logger.getLogger(__filename);
+const log = Logger.getLogger('CurrentLayoutProvider');
 
 const SAVE_INTERVAL_MS = 1000;
 

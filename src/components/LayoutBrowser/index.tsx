@@ -22,13 +22,11 @@ import {
 import { partition } from 'lodash';
 import moment from 'moment';
 import { useSnackbar } from 'notistack';
-import path from 'path';
 import { MouseEvent, useCallback, useContext, useEffect, useLayoutEffect, useMemo } from 'react';
 import { useMountedState } from 'react-use';
 import useAsyncFn from 'react-use/lib/useAsyncFn';
 import { makeStyles } from 'tss-react/mui';
 
-import Logger from '@foxglove/log';
 import { AppSetting } from '@base/AppSetting';
 import SignInPrompt from '@base/components/LayoutBrowser/SignInPrompt';
 import { useUnsavedChangesPrompt } from '@base/components/LayoutBrowser/UnsavedChangesPrompt';
@@ -52,11 +50,12 @@ import { defaultPlaybackConfig } from '@base/providers/CurrentLayoutProvider/red
 import { AppEvent } from '@base/services/IAnalytics';
 import { Layout, LayoutID, layoutIsShared } from '@base/services/ILayoutStorage';
 import { downloadTextFile } from '@base/util/download';
+import Logger from '@foxglove/log';
 
 import LayoutSection from './LayoutSection';
 import { useLayoutBrowserReducer } from './reducer';
 
-const log = Logger.getLogger(__filename);
+const log = Logger.getLogger('LayoutBrowser');
 
 const selectedLayoutIdSelector = (state: LayoutState) => state.selectedLayout?.id;
 
@@ -479,7 +478,7 @@ export default function LayoutBrowser({
 
       const newLayouts = await Promise.all(
         Array.from(files).map(async (file) => {
-          const layoutName = path.basename(file.name, path.extname(file.name));
+          const layoutName = file.name.substring(0, file.name.lastIndexOf('.'));
           const content = await file.text();
 
           if (!isMounted()) {

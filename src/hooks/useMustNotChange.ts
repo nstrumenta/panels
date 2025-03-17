@@ -6,7 +6,7 @@ import { useRef } from 'react';
 
 import Logger from '@foxglove/log';
 
-const log = Logger.getLogger(__filename);
+const log = Logger.getLogger('useMustNotChange');
 
 const useMustNotChangeImpl = (value: unknown): void => {
   const valueRef = useRef<unknown | undefined>(value);

@@ -29,7 +29,7 @@ import { migratePanelsState } from '../migrateLayout';
 import { isLayoutEqual } from './compareLayouts';
 import computeLayoutSyncOperations, { SyncOperation } from './computeLayoutSyncOperations';
 
-const log = Logger.getLogger(__filename);
+const log = Logger.getLogger('LayoutManager');
 
 /**
  * Try to perform the given updateLayout operation on remote storage. If a conflict is returned,

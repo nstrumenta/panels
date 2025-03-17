@@ -19,7 +19,7 @@ import { formatFrame } from '@base/util/time';
 const DRIFT_THRESHOLD_SEC = 1; // Maximum amount of drift allowed.
 const WAIT_FOR_SEEK_SEC = 1; // How long we wait for a change in `lastSeekTime` before warning.
 
-const log = Logger.getLogger(__filename);
+const log = Logger.getLogger('MessageOrderTracker');
 
 // Logs a warning when there is a significant difference (more than `DRIFT_THRESHOLD_SEC`) between
 // a message's timestamp and `player.currentTime` OR when messages went back in time,

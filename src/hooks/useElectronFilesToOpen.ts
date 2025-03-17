@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 
 import Logger from '@foxglove/log';
 
-const log = Logger.getLogger(__filename);
+const log = Logger.getLogger('useElectronFilesToOpen');
 
 // Hook to get any files the main thread has told us to open
 // See the comments in main thread implementation on how the files are injected into this input

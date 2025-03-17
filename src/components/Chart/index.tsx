@@ -23,7 +23,7 @@ import WebWorkerManager from '../../util/WebWorkerManager';
 import { mightActuallyBePartial } from '../../util/mightActuallyBePartial';
 import ChartJSWorker from './worker/main.ts?worker';
 
-const log = Logger.getLogger(__filename);
+const log = Logger.getLogger('Chart');
 
 function makeChartJSWorker() {
   return new ChartJSWorker();

@@ -6,15 +6,17 @@ import { last } from 'lodash';
 import { useCallback, useEffect, useLayoutEffect, useReducer, useState } from 'react';
 
 import { useRef } from 'react';
-import GameScene from './GameScene';
 
 import { RosPath } from '@base/components/MessagePathSyntax/constants';
 import parseRosPath from '@base/components/MessagePathSyntax/parseRosPath';
 import { simpleGetMessagePathDataItems } from '@base/components/MessagePathSyntax/simpleGetMessagePathDataItems';
 import Stack from '@base/components/Stack';
-import { MessageEvent, PanelExtensionContext, SettingsTreeAction } from '@foxglove/studio';
+import {
+  MessageEvent as StudioMessageEvent,
+  PanelExtensionContext,
+  SettingsTreeAction,
+} from '@foxglove/studio';
 
-import { Quaternion } from 'three';
 import { settingsActionReducer, useSettingsTree } from './settings';
 import { Config } from './types';
 
@@ -29,14 +31,14 @@ const defaultConfig: Config = {
 type State = {
   path: string;
   parsedPath: RosPath | undefined;
-  latestMessage: MessageEvent<unknown> | undefined;
+  latestMessage: StudioMessageEvent<unknown> | undefined;
   latestMatchingQueriedData: unknown | undefined;
   error: Error | undefined;
   pathParseError: string | undefined;
 };
 
 type Action =
-  | { type: 'frame'; messages: readonly MessageEvent<unknown>[] }
+  | { type: 'frame'; messages: readonly StudioMessageEvent<unknown>[] }
   | { type: 'path'; path: string }
   | { type: 'seek' };
 
@@ -121,30 +123,23 @@ export function SceneEditor({ context }: Props): JSX.Element {
   // panel extensions must notify when they've completed rendering
   // onRender will setRenderDone to a done callback which we can invoke after we've rendered
   const [renderDone, setRenderDone] = useState<() => void>(() => () => {});
-  const [scene, setScene] = useState<GameScene>();
-  const canvasContainerRef = useRef<HTMLDivElement>(null);
-  const renderTargetRef = useRef<HTMLCanvasElement>(null);
+
+  const iframeRef = useRef<HTMLIFrameElement>(null);
 
   useEffect(() => {
-    if (canvasContainerRef.current && renderTargetRef.current) {
-      const scene = new GameScene(renderTargetRef.current);
-      setScene(scene);
-      scene.setSize(renderTargetRef.current.clientWidth, renderTargetRef.current.clientHeight);
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data.type === 'iframeLoaded') {
+        console.log('Iframe loaded');
+        // Handle messages from the iframe
+      }
+    };
 
-      const resizeObserver = new ResizeObserver(() => {
-        scene.setSize(
-          canvasContainerRef.current!.clientWidth,
-          canvasContainerRef.current!.clientHeight
-        );
-      });
+    window.addEventListener('message', handleMessage);
 
-      resizeObserver.observe(canvasContainerRef.current);
-
-      return () => {
-        resizeObserver.disconnect();
-      };
-    }
-  }, [renderTargetRef, canvasContainerRef]);
+    return () => {
+      window.removeEventListener('message', handleMessage);
+    };
+  }, []);
 
   const [config, setConfig] = useState(() => ({
     ...defaultConfig,
@@ -215,26 +210,65 @@ export function SceneEditor({ context }: Props): JSX.Element {
   }, [context, state.parsedPath?.topicName]);
 
   // New useEffect to update GameScene with latestMessage
-  useEffect(() => {
-    if (scene && state.latestMessage && renderTargetRef.current) {
-      console.log(state.latestMessage.message);
-      const fusion = (state.latestMessage.message as { values: number[] }).values;
-      const q = new Quaternion(fusion[1], fusion[2], fusion[3], fusion[0]);
-      scene.mesh.setRotationFromQuaternion(q);
-      scene.renderer.render(scene.scene, scene.camera);
-    }
-  }, [scene, state.latestMessage]);
+  // useEffect(() => {
+  //   if (scene && state.latestMessage && renderTargetRef.current) {
+  //     console.log(state.latestMessage.message);
+  //     // const fusion = (state.latestMessage.message as { values: number[] }).values;
+  //     // const q = new Quaternion(fusion[1], fusion[2], fusion[3], fusion[0]);
+  //     // scene.mesh.setRotationFromQuaternion(q);
+  //     // scene.renderer.render(scene.scene, scene.camera);
+  //   }
+  // }, [scene, state.latestMessage]);
 
   // Indicate render is complete - the effect runs after the dom is updated
   useEffect(() => {
     renderDone();
   }, [renderDone]);
 
+  const injectScriptIntoIframe = () => {
+    if (iframeRef.current) {
+      const scriptContent = `
+        window.addEventListener('message', (event) => {
+          if (event.data.type === 'runScript') {
+            const scriptContent = event.data.script;
+            try {
+              eval(scriptContent); // Execute the script
+            } catch (error) {
+              console.error('Error executing script:', error);
+            }
+          }
+        });
+        window.parent.postMessage({ type: 'iframeLoaded' }, '*');
+      `;
+      const script = document.createElement('script');
+      script.textContent = scriptContent;
+      iframeRef.current.contentDocument?.body.appendChild(script);
+    }
+  };
+
+  useEffect(() => {
+    if (iframeRef.current) {
+      iframeRef.current.onload = injectScriptIntoIframe;
+    }
+  }, []);
+
+  const runScriptInIframe = (script: string) => {
+    if (iframeRef.current) {
+      iframeRef.current.contentWindow?.postMessage({ type: 'runScript', script }, '*');
+    }
+  };
+
   return (
     <Stack fullHeight>
-      <div ref={canvasContainerRef} style={{ height: '100%', width: '100%' }}>
-        <canvas ref={renderTargetRef} />
-      </div>
+      <iframe
+        ref={iframeRef}
+        src="/threejs/editor/index.html"
+        style={{ width: '100%', height: '500px', border: 'none' }}
+        title="Iframe Example"
+      ></iframe>
+      <button onClick={() => runScriptInIframe('console.log("Hello from parent!");')}>
+        Run Script in Iframe
+      </button>
     </Stack>
   );
 }

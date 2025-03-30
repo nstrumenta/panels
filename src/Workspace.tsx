@@ -402,15 +402,11 @@ export default function Workspace(props: WorkspaceProps): JSX.Element {
     // open the experiment from param on a new page load
     if (setExperimentPath && experimentParam) {
       openExperiment(experimentParam);
+      if (layoutId) {
+        setSelectedLayoutId(layoutId as LayoutID);
+      }
     }
-  }, [openExperiment, setExperimentPath, experimentParam]);
-
-  useEffect(() => {
-    if (layoutId) {
-      // open the layout from param on a new page load
-      setSelectedLayoutId(layoutId as LayoutID);
-    }
-  }, [layoutId, setSelectedLayoutId]);
+  }, [openExperiment, setExperimentPath, experimentParam, setSelectedLayoutId, layoutId]);
 
   return (
     <WorkspaceContextProvider>

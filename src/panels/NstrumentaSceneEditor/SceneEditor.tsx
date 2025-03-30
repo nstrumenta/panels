@@ -5,23 +5,29 @@
 import { last } from 'lodash';
 import { useCallback, useEffect, useLayoutEffect, useReducer, useState } from 'react';
 
+import { Quaternion } from 'three';
+
 import { useRef } from 'react';
 
 import { RosPath } from '@base/components/MessagePathSyntax/constants';
 import parseRosPath from '@base/components/MessagePathSyntax/parseRosPath';
 import { simpleGetMessagePathDataItems } from '@base/components/MessagePathSyntax/simpleGetMessagePathDataItems';
 import Stack from '@base/components/Stack';
-import {
-  MessageEvent as StudioMessageEvent,
-  PanelExtensionContext,
-  SettingsTreeAction,
-} from '@foxglove/studio';
+import { SettingsTreeAction, MessageEvent as StudioMessageEvent } from '@foxglove/studio';
 
+import { useNstrumentaContext } from '@base/context/NstrumentaContext';
+import Logger from '@foxglove/log';
+import { collection, getFirestore, onSnapshot, query, where } from 'firebase/firestore';
+import { getDownloadURL, ref } from 'firebase/storage';
+import { ExtendedPanelExtensionContext } from '.';
 import { settingsActionReducer, useSettingsTree } from './settings';
 import { Config } from './types';
 
+const log = Logger.getLogger('SceneEditor');
+
 type Props = {
-  context: PanelExtensionContext;
+  context: ExtendedPanelExtensionContext;
+  sceneJson?: string;
 };
 
 const defaultConfig: Config = {
@@ -124,14 +130,13 @@ export function SceneEditor({ context }: Props): JSX.Element {
   // onRender will setRenderDone to a done callback which we can invoke after we've rendered
   const [renderDone, setRenderDone] = useState<() => void>(() => () => {});
 
+  const { firebaseInstance, experiment, projectId } = useNstrumentaContext();
+
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
-      if (event.data.type === 'iframeLoaded') {
-        console.log('Iframe loaded');
-        // Handle messages from the iframe
-      }
+      console.log('Received message from iframe:', event.data);
     };
 
     window.addEventListener('message', handleMessage);
@@ -167,6 +172,18 @@ export function SceneEditor({ context }: Props): JSX.Element {
     context.saveState(config);
     context.setDefaultPanelTitle(config.path === '' ? undefined : config.path);
   }, [config, context]);
+
+  useEffect(() => {
+    if (iframeRef.current && context.sceneJson) {
+      iframeRef.current.contentWindow?.postMessage(
+        {
+          type: 'editor iFrame setState',
+          state: context.sceneJson,
+        },
+        '*'
+      );
+    }
+  }, [context.sceneJson, iframeRef]);
 
   useEffect(() => {
     context.onRender = (renderState, done) => {
@@ -209,16 +226,67 @@ export function SceneEditor({ context }: Props): JSX.Element {
     return () => context.unsubscribeAll();
   }, [context, state.parsedPath?.topicName]);
 
-  // New useEffect to update GameScene with latestMessage
-  // useEffect(() => {
-  //   if (scene && state.latestMessage && renderTargetRef.current) {
-  //     console.log(state.latestMessage.message);
-  //     // const fusion = (state.latestMessage.message as { values: number[] }).values;
-  //     // const q = new Quaternion(fusion[1], fusion[2], fusion[3], fusion[0]);
-  //     // scene.mesh.setRotationFromQuaternion(q);
-  //     // scene.renderer.render(scene.scene, scene.camera);
-  //   }
-  // }, [scene, state.latestMessage]);
+  // update GameScene with latestMessage
+  useEffect(() => {
+    if (state.latestMessage && iframeRef.current) {
+      console.log(state.latestMessage.message);
+      const fusion = (state.latestMessage.message as { values: number[] }).values;
+      //create a transform with rotoation from quaternion fusion
+      const rotationQuaternion = new Quaternion(fusion[1], fusion[2], fusion[3], fusion[0]);
+      //set the transform to the scene
+      iframeRef.current.contentWindow?.postMessage(
+        {
+          type: 'editor iFrame setObjectPositionRotationScale',
+          objectName: 'Cube',
+          rotationQuaternion,
+        },
+        '*'
+      );
+
+      // const q = new Quaternion(fusion[1], fusion[2], fusion[3], fusion[0]);
+      // scene.mesh.setRotationFromQuaternion(q);
+      // scene.renderer.render(scene.scene, scene.camera);
+    }
+  }, [iframeRef, state.latestMessage]);
+
+  //subscribe to firebase scene changes
+  useEffect(() => {
+    if (firebaseInstance && experiment && projectId) {
+      const subscribeToScene = async () => {
+        const dataCollectionPath = `projects/${projectId}/data`;
+
+        const db = getFirestore(firebaseInstance.app);
+        const collectionRef = collection(db, dataCollectionPath); // e.g., projects/{projectId}/data
+
+        onSnapshot(collectionRef, (snapshot) => {
+          snapshot.docChanges().forEach(async (change) => {
+            // Handle document changes here
+            const docData = change.doc.data();
+
+            if (experiment.sceneFile == docData.filePath) {
+              // Post message to iframe with new scene data
+              if (iframeRef.current) {
+                const sourceUrl = await getDownloadURL(
+                  ref(firebaseInstance!.storage, docData.filePath)
+                );
+
+                // Fetch the scene JSON from the source URL
+                const response = await fetch(sourceUrl);
+                iframeRef.current.contentWindow?.postMessage(
+                  {
+                    type: 'editor iFrame setState',
+                    state: response.ok ? await response.json() : {},
+                  },
+                  '*'
+                );
+              }
+            }
+          });
+        });
+      };
+      subscribeToScene();
+    }
+  }, [firebaseInstance, experiment, projectId]);
 
   // Indicate render is complete - the effect runs after the dom is updated
   useEffect(() => {
@@ -227,21 +295,8 @@ export function SceneEditor({ context }: Props): JSX.Element {
 
   const injectScriptIntoIframe = () => {
     if (iframeRef.current) {
-      const scriptContent = `
-        window.addEventListener('message', (event) => {
-          if (event.data.type === 'runScript') {
-            const scriptContent = event.data.script;
-            try {
-              eval(scriptContent); // Execute the script
-            } catch (error) {
-              console.error('Error executing script:', error);
-            }
-          }
-        });
-        window.parent.postMessage({ type: 'iframeLoaded' }, '*');
-      `;
       const script = document.createElement('script');
-      script.textContent = scriptContent;
+      script.src = '/scripts/editorMessagePassing.js';
       iframeRef.current.contentDocument?.body.appendChild(script);
     }
   };
@@ -258,13 +313,61 @@ export function SceneEditor({ context }: Props): JSX.Element {
     }
   };
 
+  const [isFirebaseReady, setIsFirebaseReady] = useState(false);
+  useEffect(() => {
+    if (firebaseInstance) {
+      setIsFirebaseReady(true);
+    }
+  }, [firebaseInstance]);
+
+  const subscribeToScene = useCallback(async () => {
+    const db = getFirestore(firebaseInstance!.app);
+
+    const dataCollectionPath = `projects/${projectId}/data`;
+    const collectionRef = collection(db, dataCollectionPath);
+    const filteredQuery = query(collectionRef, where('dirname', '==', experiment!.dirname));
+
+    onSnapshot(filteredQuery, (snapshot) => {
+      snapshot.docChanges().forEach(async (change) => {
+        // Handle document changes here
+        const docData = change.doc.data();
+        if (change.type === 'added') {
+          // Document added
+          log.debug('Document added:', docData.filePath);
+        }
+        if (change.type === 'modified') {
+          // Document modified
+          log.debug('Document modified:', docData);
+          if (docData.filePath.endsWith('.scene.json')) {
+            // Post message to iframe with new scene data
+            if (iframeRef.current) {
+              iframeRef.current.contentWindow?.postMessage(
+                { type: 'editor iFrame setState', state: docData },
+                '*'
+              );
+            }
+          }
+        }
+        if (change.type === 'removed') {
+          // Document removed
+          log.debug('Document removed:', docData);
+        }
+      });
+    });
+  }, [experiment, firebaseInstance, projectId]);
+
+  useEffect(() => {
+    if (isFirebaseReady && experiment) {
+      subscribeToScene();
+    }
+  }, [isFirebaseReady, experiment, subscribeToScene]);
+
   return (
     <Stack fullHeight>
       <iframe
         ref={iframeRef}
         src="/threejs/editor/index.html"
-        style={{ width: '100%', height: '500px', border: 'none' }}
-        title="Iframe Example"
+        style={{ width: '100%', height: '100%', border: 'none' }}
       ></iframe>
       <button onClick={() => runScriptInIframe('console.log("Hello from parent!");')}>
         Run Script in Iframe

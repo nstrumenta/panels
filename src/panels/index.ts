@@ -43,7 +43,7 @@ export const getBuiltin: () => PanelInfo[] = () => [
     description: 'rendered model',
     thumbnail: nstrumentaLogo,
     module: async () => await import('./NstrumentaModel'),
-  },  
+  },
   {
     title: 'nstrumentaSceneEditor',
     type: 'nstrumentaSceneEditor',

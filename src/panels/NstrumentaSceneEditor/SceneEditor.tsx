@@ -3,9 +3,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
 import { last } from 'lodash';
-import { useCallback, useEffect, useLayoutEffect, useReducer, useState } from 'react';
-
-import { Quaternion } from 'three';
+import { useCallback, useEffect, useState } from 'react';
 
 import { useRef } from 'react';
 
@@ -13,26 +11,14 @@ import { RosPath } from '@base/components/MessagePathSyntax/constants';
 import parseRosPath from '@base/components/MessagePathSyntax/parseRosPath';
 import { simpleGetMessagePathDataItems } from '@base/components/MessagePathSyntax/simpleGetMessagePathDataItems';
 import Stack from '@base/components/Stack';
-import { SettingsTreeAction, MessageEvent as StudioMessageEvent } from '@foxglove/studio';
+import { MessageEvent as StudioMessageEvent } from '@foxglove/studio';
 
 import { useNstrumentaContext } from '@base/context/NstrumentaContext';
 import Logger from '@foxglove/log';
 import { collection, getFirestore, onSnapshot, query, where } from 'firebase/firestore';
 import { getDownloadURL, ref } from 'firebase/storage';
-import { ExtendedPanelExtensionContext } from '.';
-import { settingsActionReducer, useSettingsTree } from './settings';
-import { Config } from './types';
 
 const log = Logger.getLogger('SceneEditor');
-
-type Props = {
-  context: ExtendedPanelExtensionContext;
-  sceneJson?: string;
-};
-
-const defaultConfig: Config = {
-  path: '',
-};
 
 type State = {
   path: string;
@@ -125,7 +111,7 @@ function reducer(state: State, action: Action): State {
   }
 }
 
-export function SceneEditor({ context }: Props): JSX.Element {
+export function SceneEditor(): JSX.Element {
   // panel extensions must notify when they've completed rendering
   // onRender will setRenderDone to a done callback which we can invoke after we've rendered
   const [renderDone, setRenderDone] = useState<() => void>(() => () => {});
@@ -145,109 +131,6 @@ export function SceneEditor({ context }: Props): JSX.Element {
       window.removeEventListener('message', handleMessage);
     };
   }, []);
-
-  const [config, setConfig] = useState(() => ({
-    ...defaultConfig,
-    ...(context.initialState as Partial<Config>),
-  }));
-
-  const [state, dispatch] = useReducer(
-    reducer,
-    config,
-    ({ path }): State => ({
-      path,
-      parsedPath: parseRosPath(path),
-      latestMessage: undefined,
-      latestMatchingQueriedData: undefined,
-      pathParseError: undefined,
-      error: undefined,
-    })
-  );
-
-  useLayoutEffect(() => {
-    dispatch({ type: 'path', path: config.path });
-  }, [config.path]);
-
-  useEffect(() => {
-    context.saveState(config);
-    context.setDefaultPanelTitle(config.path === '' ? undefined : config.path);
-  }, [config, context]);
-
-  useEffect(() => {
-    if (iframeRef.current && context.sceneJson) {
-      iframeRef.current.contentWindow?.postMessage(
-        {
-          type: 'editor iFrame setState',
-          state: context.sceneJson,
-        },
-        '*'
-      );
-    }
-  }, [context.sceneJson, iframeRef]);
-
-  useEffect(() => {
-    context.onRender = (renderState, done) => {
-      setRenderDone(() => done);
-
-      if (renderState.didSeek === true) {
-        dispatch({ type: 'seek' });
-      }
-
-      if (renderState.currentFrame) {
-        dispatch({ type: 'frame', messages: renderState.currentFrame });
-      }
-    };
-    context.watch('currentFrame');
-    context.watch('didSeek');
-
-    return () => {
-      context.onRender = undefined;
-    };
-  }, [context]);
-
-  const settingsActionHandler = useCallback(
-    (action: SettingsTreeAction) =>
-      setConfig((prevConfig) => settingsActionReducer(prevConfig, action)),
-    [setConfig]
-  );
-
-  const settingsTree = useSettingsTree(config, state.pathParseError, state.error?.message);
-  useEffect(() => {
-    context.updatePanelSettingsEditor({
-      actionHandler: settingsActionHandler,
-      nodes: settingsTree,
-    });
-  }, [context, settingsActionHandler, settingsTree]);
-
-  useEffect(() => {
-    if (state.parsedPath?.topicName != undefined) {
-      context.subscribe([state.parsedPath.topicName]);
-    }
-    return () => context.unsubscribeAll();
-  }, [context, state.parsedPath?.topicName]);
-
-  // update GameScene with latestMessage
-  useEffect(() => {
-    if (state.latestMessage && iframeRef.current) {
-      console.log(state.latestMessage.message);
-      const fusion = (state.latestMessage.message as { values: number[] }).values;
-      //create a transform with rotoation from quaternion fusion
-      const rotationQuaternion = new Quaternion(fusion[1], fusion[2], fusion[3], fusion[0]);
-      //set the transform to the scene
-      iframeRef.current.contentWindow?.postMessage(
-        {
-          type: 'editor iFrame setObjectPositionRotationScale',
-          objectName: 'Cube',
-          rotationQuaternion,
-        },
-        '*'
-      );
-
-      // const q = new Quaternion(fusion[1], fusion[2], fusion[3], fusion[0]);
-      // scene.mesh.setRotationFromQuaternion(q);
-      // scene.renderer.render(scene.scene, scene.camera);
-    }
-  }, [iframeRef, state.latestMessage]);
 
   //subscribe to firebase scene changes
   useEffect(() => {
@@ -272,10 +155,12 @@ export function SceneEditor({ context }: Props): JSX.Element {
 
                 // Fetch the scene JSON from the source URL
                 const response = await fetch(sourceUrl);
+                const sceneJson = await response.json();
+
                 iframeRef.current.contentWindow?.postMessage(
                   {
                     type: 'editor iFrame setState',
-                    state: response.ok ? await response.json() : {},
+                    state: sceneJson,
                   },
                   '*'
                 );
@@ -306,12 +191,6 @@ export function SceneEditor({ context }: Props): JSX.Element {
       iframeRef.current.onload = injectScriptIntoIframe;
     }
   }, []);
-
-  const runScriptInIframe = (script: string) => {
-    if (iframeRef.current) {
-      iframeRef.current.contentWindow?.postMessage({ type: 'runScript', script }, '*');
-    }
-  };
 
   const [isFirebaseReady, setIsFirebaseReady] = useState(false);
   useEffect(() => {
@@ -369,9 +248,6 @@ export function SceneEditor({ context }: Props): JSX.Element {
         src="/threejs/editor/index.html"
         style={{ width: '100%', height: '100%', border: 'none' }}
       ></iframe>
-      <button onClick={() => runScriptInIframe('console.log("Hello from parent!");')}>
-        Run Script in Iframe
-      </button>
     </Stack>
   );
 }

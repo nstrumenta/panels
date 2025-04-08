@@ -1,13 +1,32 @@
 import react from '@vitejs/plugin-react-swc';
-import { defineConfig } from 'vite';
+import { readdirSync } from 'fs';
+import { join, resolve } from 'path';
+import { defineConfig, normalizePath } from 'vite';
 import { comlink } from 'vite-plugin-comlink';
 import glsl from 'vite-plugin-glsl';
 import { viteStaticCopy } from 'vite-plugin-static-copy';
-import { resolve } from 'path';
-import { normalizePath } from 'vite';
 import svgr from 'vite-plugin-svgr';
 import wasm from 'vite-plugin-wasm';
 import tsconfigPaths from 'vite-tsconfig-paths';
+
+function getEditorFiles(baseDir, includeDirs) {
+  const files: Array<string> = [];
+  const entries = readdirSync(baseDir, { withFileTypes: true });
+
+  for (const entry of entries) {
+    const fullPath = join(baseDir, entry.name);
+    if (entry.isDirectory()) {
+      if (includeDirs === undefined || includeDirs.includes(entry.name)) {
+        files.push(...getEditorFiles(fullPath, undefined));
+      }
+    } else {
+      files.push(fullPath);
+    }
+  }
+
+  console.log('files', files);
+  return files;
+}
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -15,10 +34,16 @@ export default defineConfig({
     viteStaticCopy({
       targets: [
         {
-          src: normalizePath(resolve(__dirname, 'threejs/**/*')),
-          dest: 'threejs/',
+          src: getEditorFiles(resolve(__dirname, 'threejs'), [
+            'build',
+            'editor',
+            'src',
+            'examples',
+          ]).map((file) => normalizePath(file)),
+          dest: '/',
         },
       ],
+      structured: true,
     }),
     react({ tsDecorators: true }),
     tsconfigPaths(),

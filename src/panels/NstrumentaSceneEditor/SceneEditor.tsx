@@ -90,9 +90,8 @@ export function SceneEditor(): JSX.Element {
     }
   }, []);
 
-  // Example paths to subscribe to
   useEffect(() => {
-    setPaths(['fusion']); // Replace with actual paths
+    setPaths(['fusion']);
   }, []);
 
   // Handle messages from subscribed paths
@@ -100,6 +99,7 @@ export function SceneEditor(): JSX.Element {
     if (itemsByPath) {
       Object.entries(itemsByPath).forEach(([path, messages]) => {
         log.debug(`Messages for path ${path}:`, messages);
+        if(messages.length === 0) return;
 
         // make positon and rotation from fusion message
         const fusion = (messages[0].messageEvent.message as unknown as { values: number[] }).values;

@@ -24,6 +24,7 @@ export type NstrumentaExperiment = {
   dirname: string;
   layoutFilePath: string;
   labelFiles: NstrumentaLabels[];
+  sceneFile: string;
   videos: NstrumentaVideo[];
 };
 

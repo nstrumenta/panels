@@ -26,7 +26,7 @@ import {
   useExtensionMarketplace,
 } from '@base/context/ExtensionMarketplaceContext';
 
-const log = Log.getLogger(__filename);
+const log = Log.getLogger('ExtensionsSettings');
 
 const StyledListItemButton = muiStyled(ListItemButton)(({ theme }) => ({
   '&:hover': {

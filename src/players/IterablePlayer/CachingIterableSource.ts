@@ -18,7 +18,7 @@ import {
   MessageIteratorArgs,
 } from './IIterableSource';
 
-const log = Log.getLogger(__filename);
+const log = Log.getLogger('CachingIterableSource');
 
 // An individual cache item represents a continuous range of CacheIteratorItems
 type CacheBlock = {

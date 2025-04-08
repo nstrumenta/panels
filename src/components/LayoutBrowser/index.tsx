@@ -22,13 +22,11 @@ import {
 import { partition } from 'lodash';
 import moment from 'moment';
 import { useSnackbar } from 'notistack';
-import path from 'path';
 import { MouseEvent, useCallback, useContext, useEffect, useLayoutEffect, useMemo } from 'react';
 import { useMountedState } from 'react-use';
 import useAsyncFn from 'react-use/lib/useAsyncFn';
 import { makeStyles } from 'tss-react/mui';
 
-import Logger from '@foxglove/log';
 import { AppSetting } from '@base/AppSetting';
 import SignInPrompt from '@base/components/LayoutBrowser/SignInPrompt';
 import { useUnsavedChangesPrompt } from '@base/components/LayoutBrowser/UnsavedChangesPrompt';
@@ -52,12 +50,12 @@ import { defaultPlaybackConfig } from '@base/providers/CurrentLayoutProvider/red
 import { AppEvent } from '@base/services/IAnalytics';
 import { Layout, LayoutID, layoutIsShared } from '@base/services/ILayoutStorage';
 import { downloadTextFile } from '@base/util/download';
-import showOpenFilePicker from '@base/util/showOpenFilePicker';
+import Logger from '@foxglove/log';
 
 import LayoutSection from './LayoutSection';
 import { useLayoutBrowserReducer } from './reducer';
 
-const log = Logger.getLogger(__filename);
+const log = Logger.getLogger('LayoutBrowser');
 
 const selectedLayoutIdSelector = (state: LayoutState) => state.selectedLayout?.id;
 
@@ -466,65 +464,63 @@ export default function LayoutBrowser({
     if (!(await promptForUnsavedChanges())) {
       return;
     }
-    const fileHandles = await showOpenFilePicker({
-      multiple: true,
-      excludeAcceptAllOption: false,
-      types: [
-        {
-          description: 'JSON Files',
-          accept: {
-            'application/json': ['.json'],
-          },
-        },
-      ],
-    });
-    if (fileHandles.length === 0) {
-      return;
-    }
 
-    const newLayouts = await Promise.all(
-      fileHandles.map(async (fileHandle) => {
-        const file = await fileHandle.getFile();
-        const layoutName = path.basename(file.name, path.extname(file.name));
-        const content = await file.text();
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.multiple = true;
+    fileInput.accept = 'application/json';
 
-        if (!isMounted()) {
-          return;
-        }
+    fileInput.addEventListener('change', async (event) => {
+      const files = (event.target as HTMLInputElement).files;
+      if (!files) {
+        return;
+      }
 
-        let parsedState: unknown;
-        try {
-          parsedState = JSON.parse(content);
-        } catch (err) {
-          enqueueSnackbar(`${file.name} is not a valid layout: ${err.message}`, {
-            variant: 'error',
+      const newLayouts = await Promise.all(
+        Array.from(files).map(async (file) => {
+          const layoutName = file.name.substring(0, file.name.lastIndexOf('.'));
+          const content = await file.text();
+
+          if (!isMounted()) {
+            return;
+          }
+
+          let parsedState: unknown;
+          try {
+            parsedState = JSON.parse(content);
+          } catch (err) {
+            enqueueSnackbar(`${file.name} is not a valid layout: ${err.message}`, {
+              variant: 'error',
+            });
+            return;
+          }
+
+          if (typeof parsedState !== 'object' || !parsedState) {
+            enqueueSnackbar(`${file.name} is not a valid layout`, { variant: 'error' });
+            return;
+          }
+
+          const data = parsedState as LayoutData;
+          const newLayout = await layoutManager.saveNewLayout({
+            name: layoutName,
+            data,
+            permission: 'CREATOR_WRITE',
           });
-          return;
-        }
+          return newLayout;
+        })
+      );
 
-        if (typeof parsedState !== 'object' || !parsedState) {
-          enqueueSnackbar(`${file.name} is not a valid layout`, { variant: 'error' });
-          return;
-        }
+      if (!isMounted()) {
+        return;
+      }
+      const newLayout = newLayouts.find((layout) => layout != undefined);
+      if (newLayout) {
+        void onSelectLayout(newLayout);
+      }
+      void analytics.logEvent(AppEvent.LAYOUT_IMPORT, { numLayouts: files.length });
+    });
 
-        const data = parsedState as LayoutData;
-        const newLayout = await layoutManager.saveNewLayout({
-          name: layoutName,
-          data,
-          permission: 'CREATOR_WRITE',
-        });
-        return newLayout;
-      })
-    );
-
-    if (!isMounted()) {
-      return;
-    }
-    const newLayout = newLayouts.find((layout) => layout != undefined);
-    if (newLayout) {
-      void onSelectLayout(newLayout);
-    }
-    void analytics.logEvent(AppEvent.LAYOUT_IMPORT, { numLayouts: fileHandles.length });
+    fileInput.click();
   }, [
     analytics,
     enqueueSnackbar,

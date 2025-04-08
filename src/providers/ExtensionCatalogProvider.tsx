@@ -16,7 +16,7 @@ import {
 import { ExtensionLoader } from '@base/services/ExtensionLoader';
 import { ExtensionInfo, ExtensionNamespace } from '@base/types/Extensions';
 
-const log = Logger.getLogger(__filename);
+const log = Logger.getLogger('ExtensionCatalogProvider');
 
 type ContributionPoints = {
   panels: Record<string, RegisteredPanel>;
@@ -40,12 +40,7 @@ function activateExtension(
     return { react: React, 'react-dom': ReactDOM }[name];
   };
 
-  const extensionMode =
-    process.env.NODE_ENV === 'production'
-      ? 'production'
-      : process.env.NODE_ENV === 'test'
-      ? 'test'
-      : 'development';
+  const extensionMode = 'development';
 
   const ctx: ExtensionContext = {
     mode: extensionMode,

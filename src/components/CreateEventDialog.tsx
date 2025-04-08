@@ -35,7 +35,7 @@ import Stack from '@base/components/Stack';
 import { EventsStore, useEvents } from '@base/context/EventsContext';
 import { useAppTimeFormat } from '@base/hooks';
 
-const log = Log.getLogger(__filename);
+const log = Log.getLogger('CreateEventDialog');
 
 const fadeInAnimation = keyframes`
   from {

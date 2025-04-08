@@ -10,7 +10,7 @@ import { v4 as uuid } from 'uuid';
 
 import Logger from '@foxglove/log';
 
-const log = Logger.getLogger(__filename);
+const log = Logger.getLogger('useIndexedDbRecents');
 
 const IDB_KEY = 'recents';
 const IDB_STORE = idbCreateStore('foxglove-recents', 'recents');

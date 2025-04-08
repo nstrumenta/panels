@@ -62,7 +62,7 @@ const CACHE_BLOCK_SIZE = 1024 * 1024 * 10; // 10MiB blocks.
 // Don't start a new connection if we're 5MiB away from downloading the requested byte.
 const CLOSE_ENOUGH_BYTES_TO_NOT_START_NEW_CONNECTION = 1024 * 1024 * 5;
 
-const log = Logger.getLogger(__filename);
+const log = Logger.getLogger('CachedFilelike');
 
 interface ILogger {
   debug(..._args: unknown[]): void;

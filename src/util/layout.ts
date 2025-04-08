@@ -31,7 +31,7 @@ import { TabConfig, TabLocation, TabPanelConfig } from '@base/types/layouts';
 import { PanelConfig, MosaicDropTargetPosition, SavedProps } from '@base/types/panels';
 import { TAB_PANEL_TYPE } from '@base/util/globalConstants';
 
-const log = Logger.getLogger(__filename);
+const log = Logger.getLogger('layout');
 
 /** Key injected into panel configs for user-selected title (overrides setDefaultPanelTitle) */
 export const PANEL_TITLE_CONFIG_KEY = 'foxglovePanelTitle';

@@ -7,7 +7,7 @@ import { useEffect, useState } from 'react';
 
 import Logger from '@foxglove/log';
 
-const log = Logger.getLogger(__filename);
+const log = Logger.getLogger('useMemoryInfo');
 
 type UseMemoryInfoOptions = {
   refreshIntervalMs: number;

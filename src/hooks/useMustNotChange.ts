@@ -6,7 +6,7 @@ import { useRef } from 'react';
 
 import Logger from '@foxglove/log';
 
-const log = Logger.getLogger(__filename);
+const log = Logger.getLogger('useMustNotChange');
 
 const useMustNotChangeImpl = (value: unknown): void => {
   const valueRef = useRef<unknown | undefined>(value);
@@ -16,15 +16,10 @@ const useMustNotChangeImpl = (value: unknown): void => {
   valueRef.current = value;
 };
 
-const noOpImpl = () => {};
-
 /**
  * useMustNotChange throws if the value provided as the first argument ever changes.
- *
- * Note: In production builds this hook is a no-op.
- *
  */
-const useMustNotChange = process.env.NODE_ENV !== 'development' ? noOpImpl : useMustNotChangeImpl;
+const useMustNotChange = useMustNotChangeImpl;
 
 export default useMustNotChange;
 

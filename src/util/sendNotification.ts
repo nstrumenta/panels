@@ -49,15 +49,9 @@ const defaultNotificationHandler: NotificationHandler = (
   if (inWebWorker()) {
     const webWorkerError =
       'Web Worker has uninitialized sendNotification function; this means this error message cannot show up in the UI (so we show it here in the console instead).';
-    if (process.env.NODE_ENV === 'test') {
-      throw new Error(webWorkerError);
-    } else {
-      const consoleFn =
-        severity === 'error' ? console.error : severity === 'warn' ? console.warn : console.info;
-      consoleFn(webWorkerError, message, details, type);
-    }
-    return;
-  } else if (process.env.NODE_ENV === 'test') {
+    const consoleFn =
+      severity === 'error' ? console.error : severity === 'warn' ? console.warn : console.info;
+    consoleFn(webWorkerError, message, details, type);
     return;
   }
   console.error('Notification before error display is mounted', message, details, type);

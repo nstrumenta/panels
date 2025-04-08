@@ -37,7 +37,7 @@ import { BlockLoader } from './BlockLoader';
 import { BufferedIterableSource } from './BufferedIterableSource';
 import { IIterableSource, Initalization, IteratorResult } from './IIterableSource';
 
-const log = Log.getLogger(__filename);
+const log = Log.getLogger('IterablePlayer');
 
 // Number of bytes that we aim to keep in the cache.
 // Setting this to higher than 1.5GB caused the renderer process to crash on linux.

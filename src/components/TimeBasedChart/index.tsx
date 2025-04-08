@@ -54,7 +54,7 @@ import { downsampleScatter, downsampleTimeseries } from './downsample';
 
 export type { TimeBasedChartTooltipData };
 
-const log = Logger.getLogger(__filename);
+const log = Logger.getLogger('TimeBasedChart');
 
 const useStyles = makeStyles()((theme) => ({
   root: {

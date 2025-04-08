@@ -6,7 +6,7 @@ import Logger from '@foxglove/log';
 import { Layout, layoutIsShared } from '@base/services/ILayoutStorage';
 import { RemoteLayout } from '@base/services/IRemoteLayoutStorage';
 
-const log = Logger.getLogger(__filename);
+const log = Logger.getLogger('computeLayoutSyncOperations');
 
 export type SyncOperation =
   | { local: true; type: 'add-to-cache'; remoteLayout: RemoteLayout }

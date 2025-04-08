@@ -17,18 +17,41 @@
     "noFallthroughCasesInSwitch": true,
     "noEmit": true,
     "jsx": "react-jsx",
-    "lib": ["dom", "dom.iterable", "es2022", "webworker"],
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "es2022",
+      "webworker"
+    ],
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
     "useUnknownInCatchVariables": false,
     "baseUrl": "./src",
     "paths": {
-      "@base": ["."],
-      "@base/*": ["./*"],
-      "@foxglove/hooks": ["./hooks"],
-      "@foxglove/log": ["./log"],
-      "@foxglove/studio": ["./studio"]
-    }
+      "@base": [
+        "."
+      ],
+      "@base/*": [
+        "./*"
+      ],
+      "@foxglove/hooks": [
+        "./hooks"
+      ],
+      "@foxglove/log": [
+        "./log"
+      ],
+      "@foxglove/studio": [
+        "./studio"
+      ]
+    },
+    "types": [],
   },
-  "include": ["src", "global.d.ts"]
+  "include": [
+    "src/**/*",
+    "global.d.ts",
+  ],
+  "exclude": [
+    "node_modules",
+    "threejs"
+  ]
 }

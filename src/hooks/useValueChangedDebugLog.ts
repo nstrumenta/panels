@@ -2,13 +2,11 @@
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
-import { useRef, useLayoutEffect } from 'react';
+import { useLayoutEffect, useRef } from 'react';
 
 import Logger from '@foxglove/log';
 
-const log = Logger.getLogger(__filename);
-
-const noOpImpl = () => {};
+const log = Logger.getLogger('useValueChangedDebugLog');
 
 function useValueChangedDebugLogImpl(value: unknown, msg: string): void {
   const prevValue = useRef<unknown>(value);
@@ -22,12 +20,7 @@ function useValueChangedDebugLogImpl(value: unknown, msg: string): void {
 
 /**
  * useValueChangedDebugLog logs `msg` if `value` changes
- *
- * Note: In production builds this hook is a no-op.
  */
-const useValueChangedDebugLog =
-  process.env.NODE_ENV !== 'development' && process.env.NODE_ENV !== 'test'
-    ? noOpImpl
-    : useValueChangedDebugLogImpl;
+const useValueChangedDebugLog = useValueChangedDebugLogImpl;
 
 export default useValueChangedDebugLog;

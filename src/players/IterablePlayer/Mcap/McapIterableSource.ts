@@ -19,7 +19,7 @@ import { McapIndexedIterableSource } from './McapIndexedIterableSource';
 import { McapUnindexedIterableSource } from './McapUnindexedIterableSource';
 import { RemoteFileReadable } from './RemoteFileReadable';
 
-const log = Log.getLogger(__filename);
+const log = Log.getLogger('McapIterableSource');
 
 async function tryCreateIndexedReader(readable: McapTypes.IReadable) {
   const decompressHandlers = await loadDecompressHandlers();

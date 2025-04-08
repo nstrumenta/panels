@@ -23,7 +23,7 @@ import { RpcElement, RpcScales } from '../../../components/Chart/types';
 import { maybeCast } from '../../../util/maybeCast';
 import { fonts } from '../../../util/sharedStyleConstants';
 
-const log = Logger.getLogger(__filename);
+const log = Logger.getLogger('ChartJSManager');
 
 export type InitOpts = {
   id: string;

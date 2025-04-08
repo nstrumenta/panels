@@ -13,7 +13,7 @@ import { AppURLState, parseAppURLState } from '@base/util/appURLState';
 const selectPlayerPresence = (ctx: MessagePipelineContext) => ctx.playerState.presence;
 const selectSeek = (ctx: MessagePipelineContext) => ctx.seekPlayback;
 
-const log = Log.getLogger(__filename);
+const log = Log.getLogger('useInitialDeepLinkState');
 
 /*
  * Separation of sync functions is necessary to prevent memory leak from context kept in

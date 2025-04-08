@@ -7,7 +7,7 @@ import { useCallback } from 'react';
 
 import Logger from '@foxglove/log';
 
-const log = Logger.getLogger(__filename);
+const log = Logger.getLogger('useCallbackWithToast');
 
 /**
  * A version of React.useCallback() displaying any errors thrown from the function as toast notifications.

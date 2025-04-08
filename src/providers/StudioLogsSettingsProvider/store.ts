@@ -12,7 +12,7 @@ import {
 
 import { LocalStorageSaveState } from './types';
 
-const log = Log.getLogger(__filename);
+const log = Log.getLogger('store');
 
 const defaultGlobalLevel: LogLevel = 'debug';
 

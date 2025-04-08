@@ -102,7 +102,7 @@ export type SelectedPanelActions = {
   togglePanelSelected: (panelId: string, containingTabId: string | undefined) => void;
 };
 
-const log = Logger.getLogger(__filename);
+const log = Logger.getLogger('CurrentLayoutContext');
 
 const CurrentLayoutContext = createContext<ICurrentLayout | undefined>(undefined);
 CurrentLayoutContext.displayName = 'CurrentLayoutContext';

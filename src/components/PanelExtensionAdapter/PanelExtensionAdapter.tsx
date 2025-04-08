@@ -47,7 +47,7 @@ import { assertNever } from '@base/util/assertNever';
 
 import { initRenderStateBuilder } from './renderState';
 
-const log = Logger.getLogger(__filename);
+const log = Logger.getLogger('PanelExtensionAdapter');
 
 type PanelExtensionAdapterProps = {
   /** function that initializes the panel extension */

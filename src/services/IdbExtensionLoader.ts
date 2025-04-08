@@ -11,7 +11,7 @@ import { ExtensionInfo, ExtensionNamespace } from '@base/types/Extensions';
 
 import { IdbExtensionStorage } from './IdbExtensionStorage';
 
-const log = Log.getLogger(__filename);
+const log = Log.getLogger('IdbExtensionLoader');
 
 function parsePackageName(name: string): { publisher?: string; name: string } {
   const res = /^@([^/]+)\/(.+)/.exec(name);

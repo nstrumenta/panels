@@ -18,7 +18,7 @@ import {
 import { PlayerProblem, Topic, TopicStats } from '../../../players/types';
 import { RosDatatypes } from '../../../types/RosDatatypes';
 
-const log = Logger.getLogger(__filename);
+const log = Logger.getLogger('McapIndexedIterableSource');
 
 export class McapIndexedIterableSource implements IIterableSource {
   private reader: McapIndexedReader;

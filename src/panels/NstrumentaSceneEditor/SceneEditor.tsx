@@ -79,7 +79,7 @@ export function SceneEditor(): JSX.Element {
   const injectScriptIntoIframe = () => {
     if (iframeRef.current) {
       const script = document.createElement('script');
-      script.src = '/scripts/editorMessagePassing.js';
+      script.src = './scripts/editorMessagePassing.js';
       iframeRef.current.contentDocument?.body.appendChild(script);
     }
   };
@@ -124,7 +124,7 @@ export function SceneEditor(): JSX.Element {
     <Stack fullHeight>
       <iframe
         ref={iframeRef}
-        src="/threejs/editor/index.html"
+        src="./threejs/editor/index.html"
         style={{ width: '100%', height: '100%', border: 'none' }}
       ></iframe>
     </Stack>

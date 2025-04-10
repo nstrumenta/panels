@@ -42,6 +42,10 @@ export default defineConfig({
           ]).map((file) => normalizePath(file)),
           dest: '/',
         },
+        {
+          src: resolve(__dirname, 'scripts/*'),
+          dest: '/threejs/editor',
+        },
       ],
       structured: true,
     }),

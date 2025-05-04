@@ -6,15 +6,6 @@ import { ThemeOptions as MuiThemeOptions, TypographyStyle } from '@mui/material'
 
 import { fonts } from '@base/util/sharedStyleConstants';
 
-declare module '@mui/material/styles/createTypography' {
-  interface Typography {
-    fontFeatureSettings: string;
-  }
-  interface TypographyOptions {
-    fontFeatureSettings: string;
-  }
-}
-
 export function muiTypography(): MuiThemeOptions['typography'] {
   const fontFeatureSettings = fonts.SANS_SERIF_FEATURE_SETTINGS;
   const baseFontStyles: TypographyStyle = {
@@ -23,7 +14,6 @@ export function muiTypography(): MuiThemeOptions['typography'] {
   return {
     fontFamily: fonts.SANS_SERIF,
     fontSize: 12,
-    fontFeatureSettings,
     body1: {
       ...baseFontStyles,
     },

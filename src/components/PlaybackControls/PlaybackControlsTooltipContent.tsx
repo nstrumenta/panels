@@ -27,7 +27,7 @@ const useStyles = makeStyles()((theme) => ({
     opacity: 0.5,
   },
   tooltipWrapper: {
-    fontFeatureSettings: `${theme.typography.fontFeatureSettings}, "zero"`,
+    fontFeatureSettings: '"zero"',
     fontFamily: fonts.SANS_SERIF,
     whiteSpace: 'nowrap',
     columnGap: theme.spacing(0.5),

@@ -6,7 +6,7 @@ import React from 'react';
 import { useMemo } from 'react';
 
 import LayoutManagerContext from '@base/context/LayoutManagerContext';
-import { useCurrentUser, useNstrumentaContext } from '@base/context/NstrumentaContext';
+import { useNstrumentaContext } from '@base/context/NstrumentaContext';
 import { ILayoutStorage, Layout, LayoutID } from '@base/services/ILayoutStorage';
 import LayoutManager from '@base/services/LayoutManager/LayoutManager';
 
@@ -24,10 +24,6 @@ export default function LayoutManagerProvider({
   children,
 }: React.PropsWithChildren<unknown>): JSX.Element {
   const { firebaseInstance, projectId } = useNstrumentaContext();
-  const { currentUser } = useCurrentUser();
-
-  console.log(currentUser);
-  console.log(firebaseInstance);
 
   const nstrumentaLayoutStorage = useMemo<ILayoutStorage>(() => {
     const fb = firebaseInstance;

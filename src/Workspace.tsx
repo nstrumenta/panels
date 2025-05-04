@@ -47,7 +47,7 @@ import {
   useCurrentLayoutSelector,
 } from './context/CurrentLayoutContext';
 import { EventsStore, useEvents } from './context/EventsContext';
-import { useNstrumentaContext } from './context/NstrumentaContext';
+import { useCurrentUser, useNstrumentaContext } from './context/NstrumentaContext';
 import {
   LeftSidebarItemKey,
   RightSidebarItemKey,
@@ -392,6 +392,7 @@ function WorkspaceContent(props: WorkspaceContentProps): JSX.Element {
 export default function Workspace(props: WorkspaceProps): JSX.Element {
   const openExperiment = useOpenExperiment();
   const { setExperimentPath } = useNstrumentaContext();
+  const { currentUser } = useCurrentUser();
   const experimentParam = new URLSearchParams(window.location.search).get('experiment') ?? '';
 
   const { setSelectedLayoutId } = useCurrentLayoutActions();
@@ -400,13 +401,20 @@ export default function Workspace(props: WorkspaceProps): JSX.Element {
 
   useEffect(() => {
     // open the experiment from param on a new page load
-    if (setExperimentPath && experimentParam) {
+    if (currentUser && setExperimentPath && experimentParam) {
       openExperiment(experimentParam);
       if (layoutId) {
         setSelectedLayoutId(layoutId as LayoutID);
       }
     }
-  }, [openExperiment, setExperimentPath, experimentParam, setSelectedLayoutId, layoutId]);
+  }, [
+    currentUser,
+    openExperiment,
+    setExperimentPath,
+    experimentParam,
+    setSelectedLayoutId,
+    layoutId,
+  ]);
 
   return (
     <WorkspaceContextProvider>

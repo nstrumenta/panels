@@ -302,38 +302,38 @@ export default function Sidebars<
             <TabSpacer />
             <MemoryUseIndicator />
             {bottomTabs}
-            {!currentUser && (
-              <Button
-                variant="contained"
-                color="primary"
-                size="small"
-                onClick={() => {
-                  signIn();
-                }}
-              >
-                Sign in
-              </Button>
-            )}
-
-            <IconButton
-              aria-label="User profile menu button"
-              color="inherit"
-              id="user-profile-button"
-              onClick={signIn}
-            >
-              <Avatar className={classes.avatar} variant="rounded">
-                {currentUser?.photoURL ? (
-                  <img
-                    src={currentUser.photoURL}
-                    referrerPolicy="same-origin"
-                    className={classes.userIconImage}
-                  />
-                ) : (
-                  <PersonIcon />
-                )}
-              </Avatar>
-            </IconButton>
           </Tabs>
+          {!currentUser && (
+            <Button
+              variant="contained"
+              color="primary"
+              size="small"
+              onClick={() => {
+                signIn();
+              }}
+            >
+              Sign in
+            </Button>
+          )}
+
+          <IconButton
+            aria-label="User profile menu button"
+            color="inherit"
+            id="user-profile-button"
+            onClick={signIn}
+          >
+            <Avatar className={classes.avatar} variant="rounded">
+              {currentUser?.photoURL ? (
+                <img
+                  src={currentUser.photoURL}
+                  referrerPolicy="same-origin"
+                  className={classes.userIconImage}
+                />
+              ) : (
+                <PersonIcon />
+              )}
+            </Avatar>
+          </IconButton>
         </Stack>
       }
       {

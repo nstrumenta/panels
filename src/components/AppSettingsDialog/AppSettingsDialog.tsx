@@ -3,18 +3,12 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
 import CloseIcon from '@mui/icons-material/Close';
-import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
-import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import {
-  Alert,
   Button,
-  Checkbox,
   Dialog,
   DialogActions,
   DialogProps,
-  FormControlLabel,
   IconButton,
-  Link,
   Tab,
   Tabs,
   Typography,
@@ -24,27 +18,10 @@ import {
 import { MouseEvent, SyntheticEvent, useState } from 'react';
 import { makeStyles } from 'tss-react/mui';
 
-import { AppSetting } from '@base/AppSetting';
-import CopyButton from '@base/components/CopyButton';
-import { ExperimentalFeatureSettings } from '@base/components/ExperimentalFeatureSettings';
-import ExtensionsSettings from '@base/components/ExtensionsSettings';
-import FoxgloveLogoText from '@base/components/FoxgloveLogoText';
 import Stack from '@base/components/Stack';
 import { WorkspaceContextStore, useWorkspaceStore } from '@base/context/WorkspaceContext';
-import { useAppConfigurationValue } from '@base/hooks';
-import isDesktopApp from '@base/util/isDesktopApp';
 
-import packageJson from '../../../package.json';
-
-const version = packageJson.version;
-
-import {
-  ColorSchemeSettings,
-  LaunchDefault,
-  MessageFramerate,
-  TimeFormat,
-  TimezoneSettings,
-} from './settings';
+import { ColorSchemeSettings, MessageFramerate, TimeFormat, TimezoneSettings } from './settings';
 
 const useStyles = makeStyles()((theme) => ({
   layoutGrid: {
@@ -119,64 +96,7 @@ const useStyles = makeStyles()((theme) => ({
   },
 }));
 
-type SectionKey = 'resources' | 'products' | 'contact' | 'legal';
-
-export const aboutItems: Map<
-  SectionKey,
-  {
-    subheader: string;
-    links: { title: string; url?: string }[];
-  }
-> = new Map([
-  [
-    'resources',
-    {
-      subheader: 'External resources',
-      links: [
-        ...(isDesktopApp() ? [] : [{ title: 'Desktop app', url: 'https://foxglove.dev/download' }]),
-        { title: 'Browse docs', url: 'https://foxglove.dev/docs' },
-        { title: 'Join our community', url: 'https://foxglove.dev/community' },
-      ],
-    },
-  ],
-  [
-    'products',
-    {
-      subheader: 'Products',
-      links: [
-        { title: 'Foxglove Studio', url: 'https://foxglove.dev/studio' },
-        { title: 'Foxglove Data Platform', url: 'https://foxglove.dev/data-platform' },
-      ],
-    },
-  ],
-  [
-    'contact',
-    {
-      subheader: 'Contact',
-      links: [
-        { title: 'Give feedback', url: 'https://foxglove.dev/contact' },
-        { title: 'Schedule a demo', url: 'https://foxglove.dev/demo' },
-      ],
-    },
-  ],
-  [
-    'legal',
-    {
-      subheader: 'Legal',
-      links: [
-        { title: 'License terms', url: 'https://foxglove.dev/legal/studio-license' },
-        { title: 'Privacy policy', url: 'https://foxglove.dev/legal/privacy' },
-      ],
-    },
-  ],
-]);
-
-export type AppSettingsTab =
-  | 'general'
-  | 'privacy'
-  | 'extensions'
-  | 'experimental-features'
-  | 'about';
+export type AppSettingsTab = 'general';
 
 const selectWorkspaceInitialActiveTab = (store: WorkspaceContextStore) =>
   store.prefsDialogState.initialTab;
@@ -189,12 +109,7 @@ export function AppSettingsDialog(
   const [activeTab, setActiveTab] = useState<AppSettingsTab>(
     _activeTab ?? initialActiveTab ?? 'general'
   );
-  const [crashReportingEnabled, setCrashReportingEnabled] = useAppConfigurationValue<boolean>(
-    AppSetting.CRASH_REPORTING_ENABLED
-  );
-  const [telemetryEnabled, setTelemetryEnabled] = useAppConfigurationValue<boolean>(
-    AppSetting.TELEMETRY_ENABLED
-  );
+
   const { classes, cx } = useStyles();
   const theme = useTheme();
   const smUp = useMediaQuery(theme.breakpoints.up('sm'));
@@ -233,14 +148,6 @@ export function AppSettingsDialog(
           onChange={handleTabChange}
         >
           <Tab className={classes.tab} label={'general'} value="general" />
-          <Tab className={classes.tab} label={'privacy'} value="privacy" />
-          <Tab className={classes.tab} label={'extensions'} value="extensions" />
-          <Tab
-            className={classes.tab}
-            label={'experimentalFeatures'}
-            value="experimental-features"
-          />
-          <Tab className={classes.tab} label={'about'} value="about" />
         </Tabs>
         <Stack direction="row" fullHeight overflowY="auto">
           <section
@@ -253,106 +160,6 @@ export function AppSettingsDialog(
               <TimezoneSettings />
               <TimeFormat orientation={smUp ? 'horizontal' : 'vertical'} />
               <MessageFramerate />
-              <LaunchDefault />
-            </Stack>
-          </section>
-
-          <section
-            className={cx(classes.tabPanel, {
-              [classes.tabPanelActive]: activeTab === 'privacy',
-            })}
-          >
-            <Stack gap={2}>
-              <Alert color="info" icon={<InfoOutlinedIcon />}>
-                {'privacyDescription'}
-              </Alert>
-              <Stack gap={0.5} paddingLeft={2}>
-                <FormControlLabel
-                  className={classes.formControlLabel}
-                  control={
-                    <Checkbox
-                      className={classes.checkbox}
-                      checked={telemetryEnabled ?? true}
-                      onChange={(_event, checked) => void setTelemetryEnabled(checked)}
-                    />
-                  }
-                  label={'sendAnonymizedUsageData'}
-                />
-                <FormControlLabel
-                  className={classes.formControlLabel}
-                  control={
-                    <Checkbox
-                      className={classes.checkbox}
-                      checked={crashReportingEnabled ?? true}
-                      onChange={(_event, checked) => void setCrashReportingEnabled(checked)}
-                    />
-                  }
-                  label={'sendAnonymizedCrashReports'}
-                />
-              </Stack>
-            </Stack>
-          </section>
-
-          <section
-            className={cx(classes.tabPanel, {
-              [classes.tabPanelActive]: activeTab === 'extensions',
-            })}
-          >
-            <Stack gap={2}>
-              <ExtensionsSettings />
-            </Stack>
-          </section>
-
-          <section
-            className={cx(classes.tabPanel, {
-              [classes.tabPanelActive]: activeTab === 'experimental-features',
-            })}
-          >
-            <Stack gap={2}>
-              <Alert color="warning" icon={<WarningAmberIcon />}>
-                {'experimentalFeaturesDescription'}
-              </Alert>
-              <Stack paddingLeft={2}>
-                <ExperimentalFeatureSettings />
-              </Stack>
-            </Stack>
-          </section>
-
-          <section
-            className={cx(classes.tabPanel, { [classes.tabPanelActive]: activeTab === 'about' })}
-          >
-            <Stack gap={2} alignItems="flex-start">
-              <header>
-                <FoxgloveLogoText color="primary" className={classes.logo} />
-              </header>
-              <Stack direction="row" alignItems="center" gap={1}>
-                <Typography variant="body2">version</Typography>
-                <CopyButton size="small" getText={() => version ?? ''} />
-              </Stack>
-              {[
-                aboutItems.get('resources'),
-                aboutItems.get('products'),
-                aboutItems.get('contact'),
-                aboutItems.get('legal'),
-              ].map((item) => {
-                return (
-                  <Stack key={item?.subheader} gap={1}>
-                    {item?.subheader && <Typography>{item.subheader}</Typography>}
-                    {item?.links.map((link) => (
-                      <Link
-                        variant="body2"
-                        underline="hover"
-                        key={link.title}
-                        data-testid={link.title}
-                        href={link.url}
-                        target="_blank"
-                      >
-                        {link.title}
-                      </Link>
-                    ))}
-                  </Stack>
-                );
-              })}
             </Stack>
           </section>
         </Stack>

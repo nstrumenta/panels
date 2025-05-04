@@ -219,9 +219,6 @@ export default function muiComponents(theme: Theme): Theme['components'] & MuiLa
         input: {
           padding: theme.spacing(1, 1.25),
         },
-        inputSizeSmall: {
-          padding: theme.spacing(0.75, 1),
-        },
         root: {
           borderRadius: theme.shape.borderRadius,
 

@@ -109,11 +109,11 @@ const useStyles = makeStyles()((theme) => ({
   },
   topic: {
     fontFamily: fonts.SANS_SERIF,
-    fontFeatureSettings: `${theme.typography.fontFeatureSettings}, "zero"`,
+    fontFeatureSettings: '"zero"',
   },
   big: {
     '&.MuiTypography-root': {
-      fontFeatureSettings: `${theme.typography.fontFeatureSettings}, "zero"`,
+      fontFeatureSettings: '"zero"',
     },
   },
   hoverObserver: {

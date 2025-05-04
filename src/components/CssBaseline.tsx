@@ -26,7 +26,6 @@ const useStyles = makeStyles()(({ palette, typography }) => ({
     color: palette.text.primary,
     font: 'inherit',
     fontSize: typography.body2.fontSize,
-    fontFeatureSettings: typography.fontFeatureSettings,
     fontFamily: typography.body2.fontFamily,
     fontWeight: typography.body2.fontWeight,
     zIndex: 0,
